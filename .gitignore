@@ -1,0 +1,7 @@
+*.log
+.buildozer/
+bin/
+.env
+__pycache__/
+*.pyc
+.last_signal
