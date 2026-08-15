@@ -23,6 +23,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo6 cmake libffi-dev libssl-dev
-          
-pip install --upgrade pip setuptools wheel buildozer cython
+                      
+          pip install --upgrade pip setuptools wheel buildozer cython
 
