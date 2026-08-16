@@ -27,7 +27,8 @@ jobs:
           pip install --upgrade pip setuptools wheel buildozer cython
 
 
-   
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3   
       - name: Build APK
         run: |
           buildozer android debug
