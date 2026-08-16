@@ -27,6 +27,9 @@ jobs:
           pip install --upgrade pip setuptools wheel buildozer cython
 
 
+      - name: Accept Android SDK licenses
+        run: |
+          yes | buildozer android update
       - name: Build APK
         run: |
           buildozer android debug
