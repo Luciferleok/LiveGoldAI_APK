@@ -1,10 +1,10 @@
 name: Build Android APK
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
-  workflow_dispatch:
 
 jobs:
   build:
@@ -22,22 +22,23 @@ jobs:
       - name: Install Buildozer
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo6 cmake libffi-dev libssl-dev
-                      
-          pip install --upgrade pip setuptools wheel buildozer cython
-
+          sudo apt-get install -y build-essential git zip unzip openjdk-17-jdk
+          pip install --upgrade pip setuptools wheel
+          pip install buildozer cython
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3   
+        uses: android-actions/setup-android@v3
+
       - name: Accept Android SDK licenses
-        run: yes | sdkmanager --licenses
+        run: yes | sdkmanager --licenses >/dev/null || true
+
       - name: Build APK
-       
         run: |
-          yes | sdkmanager --licenses >/dev/null || true
+          mkdir -p ~/.buildozer/android/platform/android-sdk/tools/bin
+          ln -sf "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" ~/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager
           mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
           cp -r "$ANDROID_SDK_ROOT/licenses/." ~/.buildozer/android/platform/android-sdk/licenses/
-          buildozer android debug     
+          buildozer android debug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
