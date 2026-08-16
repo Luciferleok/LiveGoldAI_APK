@@ -34,8 +34,9 @@ jobs:
       - name: Build APK
         run:        
             yes | sdkmanager --licenses >/dev/null|
-          buildozer android debug
-
+        mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
+        cp -r "$ANDROID_SDK_ROOT/licenses/." ~/.buildozer/android/platform/android-sdk/licenses/          buildozer android debug
+        buildozer android debug
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
