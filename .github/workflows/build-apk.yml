@@ -32,7 +32,8 @@ jobs:
       - name: Accept Android SDK licenses
         run: yes | sdkmanager --licenses
       - name: Build APK
-        run: |
+        run:        
+            yes | sdkmanager --licenses >/dev/null|
           buildozer android debug
 
       - name: Upload APK
