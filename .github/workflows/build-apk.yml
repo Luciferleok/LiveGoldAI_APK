@@ -29,6 +29,8 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3   
+      - name: Accept Android SDK licenses
+        run: yes | sdkmanager --licenses
       - name: Build APK
         run: |
           buildozer android debug
