@@ -1,16 +1,17 @@
-name: Build Android APK
+        name: Build Android APK
 
-on:
+          on:
+
   workflow_dispatch:
-  push:
+        push:
     branches:
       - main
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+        jobs:
+       build:
+     runs-on: ubuntu-latest
 
-    steps:
+       steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -30,12 +31,15 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Accept Android licenses
-        run: yes | sdkmanager --licenses
+        run: |
+         yes | sdkmanager --licenses || true
+         sdkmanager "platform-tools" "build-tools;37.0.0"
+
       - name: Build APK
         run: buildozer android debug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: LiveGoldAI-APK
-          path: bin/*.apk
+        name: LiveGoldAI-APK
+        path: bin/*.apk
