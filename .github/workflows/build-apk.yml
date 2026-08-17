@@ -34,7 +34,7 @@ jobs:
 
            which sdkmanager
           sdkmanager --version
-
+        yes | sdkmanager --licenses >/dev/null || true
 
       - name: Build APK
         run: |
