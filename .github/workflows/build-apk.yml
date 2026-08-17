@@ -1,15 +1,14 @@
-        name: Build Android APK
+name: Build Android APK
 
-          on:
-
+on:
   workflow_dispatch:
-        push:
+  push:
     branches:
       - main
 
-        jobs:
-       build:
-     runs-on: ubuntu-latest
+jobs:
+  build:
+    runs-on: ubuntu-latest
 
        steps:
       - name: Checkout repository
