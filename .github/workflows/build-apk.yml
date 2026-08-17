@@ -28,17 +28,19 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+      - name: Configure SDK path
+        run: |
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+
+           which sdkmanager
+          sdkmanager --version
 
       - name: Accept Android SDK licenses
         run: yes | sdkmanager --licenses >/dev/null || true
 
       - name: Build APK
         run: |
-          mkdir -p ~/.buildozer/android/platform/android-sdk/tools/bin
-          ln -sf "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" ~/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager
-          mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
-          cp -r "$ANDROID_SDK_ROOT/licenses/." ~/.buildozer/android/platform/android-sdk/licenses/
-          buildozer android debug
+              buildozer android debug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
