@@ -35,8 +35,6 @@ jobs:
            which sdkmanager
           sdkmanager --version
 
-      - name: Accept Android SDK licenses
-        run: yes | sdkmanager --licenses >/dev/null || true
 
       - name: Build APK
         run: |
