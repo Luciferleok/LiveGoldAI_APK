@@ -20,7 +20,8 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: |
+         timeout-minutes: 15
+         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential git zip unzip openjdk-17-jdk
           python -m pip install --upgrade pip setuptools wheel
@@ -30,7 +31,7 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Accept Android licenses
-        run: |
+         run: |
          yes | sdkmanager --licenses || true
                 yes | sdkmanager "build-tools;37.0.0" "platform-tools"
 
