@@ -6,10 +6,10 @@
 [app]
 
 # (str) Title of your application
-title = Live Gold AI
+title = Kalankar FX Gold Pro
 
 # (str) Package name
-package.name = livegoldai
+package.name = kalankarfxgoldpro
 
 # (str) Package domain (needed for android/ios packaging)
 package.domain = com.livegoldai

@@ -1,549 +1,280 @@
 import os
+import logging
+logging.getLogger("urllib3").setLevel(logging.WARNING)
+logging.getLogger("requests").setLevel(logging.WARNING)
 import requests
 import pandas as pd
 import numpy as np
-from datetime import datetime
+from kivy.app import App
+from kivy.uix.scrollview import ScrollView
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.gridlayout import GridLayout
+from kivy.uix.label import Label
+from kivy.clock import Clock
 
 API_KEY = os.getenv("TWELVE_DATA_API_KEY")
+SYMBOL = "XAU/USD"
 
-print("=" * 45)
-print("     LIVE GOLD AI - XAUUSD ENGINE")
-print("=" * 45)
+def fetch_data(interval="4h", size=100):
+    url = "https://api.twelvedata.com/time_series"
+    params = {"symbol": SYMBOL, "interval": interval, "outputsize": size, "apikey": API_KEY, "order": "ASC"}
+    r = requests.get(url, params=params, timeout=15)
+    data = r.json()
+    if "values" not in data:
+        return None
+    df = pd.DataFrame(data["values"])
+    for col in ["open", "high", "low", "close"]:
+        df[col] = pd.to_numeric(df[col])
+    return df
 
-url = "https://api.twelvedata.com/time_series"
+def add_all_indicators(df):
+    df["ema9"] = df["close"].ewm(span=9, adjust=False).mean()
+    df["ema21"] = df["close"].ewm(span=21, adjust=False).mean()
+    df["ema50"] = df["close"].ewm(span=50, adjust=False).mean()
 
-params = {
-    "symbol": "XAU/USD",
-    "interval": "5min",
-    "outputsize": 100,
-    "apikey": API_KEY
-}
+    ema12 = df["close"].ewm(span=12, adjust=False).mean()
+    ema26 = df["close"].ewm(span=26, adjust=False).mean()
+    df["macd"] = ema12 - ema26
+    df["macd_signal"] = df["macd"].ewm(span=9, adjust=False).mean()
 
-r = requests.get(url, params=params, timeout=15)
-data = r.json()
+    delta = df["close"].diff()
+    gain = delta.clip(lower=0)
+    loss = -delta.clip(upper=0)
+    avg_gain = gain.ewm(alpha=1/14, adjust=False).mean()
+    avg_loss = loss.ewm(alpha=1/14, adjust=False).mean()
+    rs = avg_gain / avg_loss
+    df["rsi14"] = 100 - (100 / (1 + rs))
 
-if "values" not in data:
-    print("API ERROR:", data)
-    raise SystemExit
+    prev_close = df["close"].shift(1)
+    tr = pd.concat([df["high"]-df["low"], (df["high"]-prev_close).abs(), (df["low"]-prev_close).abs()], axis=1).max(axis=1)
+    df["atr14"] = tr.ewm(alpha=1/14, adjust=False).mean()
 
-df = pd.DataFrame(data["values"])
+    plus_dm = df["high"].diff()
+    minus_dm = -df["low"].diff()
+    plus_dm[plus_dm < 0] = 0
+    minus_dm[minus_dm < 0] = 0
+    plus_dm[(plus_dm - minus_dm) < 0] = 0
+    minus_dm[(minus_dm - plus_dm) < 0] = 0
+    tr14 = tr.ewm(alpha=1/14, adjust=False).mean()
+    plus_di = 100 * (plus_dm.ewm(alpha=1/14, adjust=False).mean() / tr14)
+    minus_di = 100 * (minus_dm.ewm(alpha=1/14, adjust=False).mean() / tr14)
+    dx = 100 * (plus_di - minus_di).abs() / (plus_di + minus_di)
+    df["adx14"] = dx.ewm(alpha=1/14, adjust=False).mean()
+    df["plus_di"] = plus_di
+    df["minus_di"] = minus_di
 
-for col in ["open", "high", "low", "close"]:
-    df[col] = pd.to_numeric(df[col])
+    df["sar_bull"] = df["close"] > df["low"].rolling(5).min()
 
-df = df.iloc[::-1].reset_index(drop=True)
+    low14 = df["low"].rolling(14).min()
+    high14 = df["high"].rolling(14).max()
+    df["stoch_k"] = 100 * (df["close"] - low14) / (high14 - low14)
 
-print("DATA CONNECTED")
-print("Candles:", len(df))
-print("Latest XAUUSD:", df["close"].iloc[-1])
-print("Time:", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-print("Time:", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-print("=" * 45)
-# ===== INDICATORS =====
+    tp = (df["high"] + df["low"] + df["close"]) / 3
+    sma_tp = tp.rolling(20).mean()
+    mad = tp.rolling(20).apply(lambda x: np.abs(x - x.mean()).mean())
+    df["cci"] = (tp - sma_tp) / (0.015 * mad)
 
-df["ema9"] = df["close"].ewm(span=9, adjust=False).mean()
-df["ema21"] = df["close"].ewm(span=21, adjust=False).mean()
+    df["williams_r"] = -100 * (high14 - df["close"]) / (high14 - low14)
+    df["roc"] = df["close"].pct_change(periods=10) * 100
 
-delta = df["close"].diff()
-gain = delta.clip(lower=0)
-loss = -delta.clip(upper=0)
+    sma20 = df["close"].rolling(20).mean()
+    std20 = df["close"].rolling(20).std()
+    df["bb_upper"] = sma20 + (2 * std20)
+    df["bb_lower"] = sma20 - (2 * std20)
+    df["bb_mid"] = sma20
+    df["std20"] = std20
 
-avg_gain = gain.ewm(alpha=1/14, adjust=False).mean()
-avg_loss = loss.ewm(alpha=1/14, adjust=False).mean()
+    df["kc_upper"] = df["ema21"] + (2 * df["atr14"])
+    df["kc_lower"] = df["ema21"] - (2 * df["atr14"])
 
-rs = avg_gain / avg_loss
-df["rsi14"] = 100 - (100 / (1 + rs))
+    df["pivot"] = (df["high"].shift(1) + df["low"].shift(1) + df["close"].shift(1)) / 3
+    df["r1"] = (2 * df["pivot"]) - df["low"].shift(1)
+    df["s1"] = (2 * df["pivot"]) - df["high"].shift(1)
 
-last = df.iloc[-1]
+    return df
 
-print("EMA 9 :", round(last["ema9"], 2))
-print("EMA 21:", round(last["ema21"], 2))
-print("RSI 14:", round(last["rsi14"], 2))
+def decide(votes):
+    buy = votes.count("BUY")
+    sell = votes.count("SELL")
+    if buy > sell:
+        return "BUY"
+    elif sell > buy:
+        return "SELL"
+    else:
+        return "WAIT"
 
-if last["ema9"] > last["ema21"] and last["rsi14"] >= 55:
-    signal = "BUY"
-elif last["ema9"] < last["ema21"] and last["rsi14"] <= 45:
-    signal = "SELL"
-else:
-    signal = "WAIT"
+def get_full_analysis():
+    df = fetch_data("4h", 100)
+    if df is None:
+        return None
+    df = add_all_indicators(df)
+    last = df.iloc[-1]
+    prev = df.iloc[-2]
 
-print("=" * 45)
-print("SIGNAL:", signal)
-print("=" * 45)
-# ===== ATR 14 =====
-prev_close = df["close"].shift(1)
+    items = {}
 
-tr = pd.concat([
-    df["high"] - df["low"],
-    (df["high"] - prev_close).abs(),
-    (df["low"] - prev_close).abs()
-], axis=1).max(axis=1)
-
-df["atr14"] = tr.ewm(alpha=1/14, adjust=False).mean()
-
-last = df.iloc[-1]
-
-print("ATR 14:", round(last["atr14"], 2))
-# ===== TRADE LEVELS =====
-
-entry = last["close"]
-atr = last["atr14"]
-
-if signal == "BUY":
-    sl = entry - (1.5 * atr)
-    tp1 = entry + (1.5 * atr)
-    tp2 = entry + (3.0 * atr)
-
-elif signal == "SELL":
-    sl = entry + (1.5 * atr)
-    tp1 = entry - (1.5 * atr)
-    tp2 = entry - (3.0 * atr)
-
-else:
-    sl = tp1 = tp2 = None
-
-print("=" * 45)
-
-if signal in ["BUY", "SELL"]:
-    print("ENTRY :", round(entry, 2))
-    print("SL    :", round(sl, 2))
-    print("TP1   :", round(tp1, 2))
-    print("TP2   :", round(tp2, 2))
-else:
-    print("NO TRADE LEVELS - WAIT")
-
-print("=" * 45)
-# ===== MACD + MOMENTUM + CONFIDENCE =====
-
-ema12 = df["close"].ewm(span=12, adjust=False).mean()
-ema26 = df["close"].ewm(span=26, adjust=False).mean()
-
-df["macd"] = ema12 - ema26
-df["macd_signal"] = df["macd"].ewm(span=9, adjust=False).mean()
-
-last = df.iloc[-1]
-
-bull_score = 0
-bear_score = 0
-
-# EMA trend
-if last["ema9"] > last["ema21"]:
-    bull_score += 1
-else:
-    bear_score += 1
-
-# RSI momentum
-if last["rsi14"] >= 55:
-    bull_score += 1
-elif last["rsi14"] <= 45:
-    bear_score += 1
-
-# MACD confirmation
-if last["macd"] > last["macd_signal"]:
-    bull_score += 1
-else:
-    bear_score += 1
-
-# Candle momentum
-if last["close"] > last["open"]:
-    bull_score += 1
-elif last["close"] < last["open"]:
-    bear_score += 1
-
-if bull_score >= 3:
-    final_signal = "BUY"
-    confidence = bull_score * 25
-elif bear_score >= 3:
-    final_signal = "SELL"
-    confidence = bear_score * 25
-else:
-    final_signal = "WAIT"
-    confidence = max(bull_score, bear_score) * 25
-
-print("MACD       :", round(last["macd"], 2))
-print("MACD SIGNAL:", round(last["macd_signal"], 2))
-print("BULL SCORE :", bull_score, "/ 4")
-print("BEAR SCORE :", bear_score, "/ 4")
-print("FINAL      :", final_signal)
-print("CONFIDENCE :", str(confidence) + "%")
-print("=" * 45)
-# ===== STRONG SIGNAL FILTER =====
-
-ema_gap = abs(last["ema9"] - last["ema21"])
-atr_now = last["atr14"]
-
-strong_trend = ema_gap >= (0.20 * atr_now)
-
-body = abs(last["close"] - last["open"])
-candle_range = last["high"] - last["low"]
-
-if candle_range > 0:
-    body_ratio = body / candle_range
-else:
-    body_ratio = 0
-
-strong_candle = body_ratio >= 0.50
-
-filtered_signal = final_signal
-
-if final_signal in ["BUY", "SELL"]:
-    if not strong_trend:
-        filtered_signal = "WAIT"
-    elif not strong_candle:
-        filtered_signal = "WAIT"
-
-print("TREND GAP  :", round(ema_gap, 2))
-print("BODY RATIO :", round(body_ratio * 100, 1), "%")
-print("FILTERED   :", filtered_signal)
-print("=" * 45)
-# ===== PANDAS MULTI-TIMEFRAME ENGINE =====
-
-def mtf_from_1m():
-    global mtf_signal, mtf_confidence
-
-    params_1m = {
-        "symbol": "XAU/USD",
-        "interval": "1min",
-        "outputsize": 1000,
-        "apikey": API_KEY
+    # TREND
+    items["trend"] = {
+        "EMA9 vs EMA21": "BUY" if last["ema9"] > last["ema21"] else "SELL",
+        "Close vs EMA50": "BUY" if last["close"] > last["ema50"] else "SELL",
+        "MACD vs Signal": "BUY" if last["macd"] > last["macd_signal"] else "SELL",
+        "ADX/DI": ("BUY" if last["plus_di"] > last["minus_di"] else "SELL") if last["adx14"] > 20 else "WAIT",
+        "Parabolic SAR": "BUY" if last["sar_bull"] else "SELL",
     }
 
-    try:
-        r1 = requests.get(
-            "https://api.twelvedata.com/time_series",
-            params=params_1m,
-            timeout=20
-        )
-        d1 = r1.json()
-    except Exception as e:
-        print("MTF API ERROR:", e)
-        return
+    # MOMENTUM
+    items["momentum"] = {
+        "RSI14": "BUY" if last["rsi14"]>=55 else ("SELL" if last["rsi14"]<=45 else "WAIT"),
+        "Stochastic %K": "BUY" if last["stoch_k"]<20 else ("SELL" if last["stoch_k"]>80 else "WAIT"),
+        "CCI": "BUY" if last["cci"]<-100 else ("SELL" if last["cci"]>100 else "WAIT"),
+        "Williams %R": "BUY" if last["williams_r"]<-80 else ("SELL" if last["williams_r"]>-20 else "WAIT"),
+        "ROC": "BUY" if last["roc"]>0 else "SELL",
+    }
 
-    if "values" not in d1:
-        print("MTF DATA ERROR:", d1)
-        return
+    # VOLATILITY
+    lower_std = last["bb_mid"] - (2*last["std20"])
+    upper_std = last["bb_mid"] + (2*last["std20"])
+    items["volatility"] = {
+        "Bollinger Bands": "BUY" if last["close"]<last["bb_lower"] else ("SELL" if last["close"]>last["bb_upper"] else "WAIT"),
+        "Keltner Channel": "BUY" if last["close"]<last["kc_lower"] else ("SELL" if last["close"]>last["kc_upper"] else "WAIT"),
+        "Std Dev Bands": "BUY" if last["close"]<lower_std else ("SELL" if last["close"]>upper_std else "WAIT"),
+    }
 
-    base = pd.DataFrame(d1["values"])
+    # SUPPORT/RESISTANCE
+    items["sr"] = {
+        "Pivot Point": "BUY" if last["close"]>last["pivot"] else "SELL",
+        "R1/S1 Levels": "BUY" if last["close"]<last["s1"] else ("SELL" if last["close"]>last["r1"] else "WAIT"),
+    }
 
-    base["datetime"] = pd.to_datetime(base["datetime"])
+    # CANDLESTICK
+    body = abs(last["close"] - last["open"])
+    upper_wick = last["high"] - max(last["close"], last["open"])
+    lower_wick = min(last["close"], last["open"]) - last["low"]
 
-    for c in ["open", "high", "low", "close"]:
-        base[c] = pd.to_numeric(base[c], errors="coerce")
-
-    base = (
-        base
-        .sort_values("datetime")
-        .set_index("datetime")
-    )
-
-    # Remove current/incomplete 1-minute candle
-    if len(base) > 1:
-        base = base.iloc[:-1]
-
-    def analyse_tf(minutes):
-
-        rule = f"{minutes}min"
-
-        tf = base.resample(
-            rule,
-            label="right",
-            closed="right"
-        ).agg({
-            "open": "first",
-            "high": "max",
-            "low": "min",
-            "close": "last"
-        }).dropna()
-
-        # Don't analyse incomplete resampled candle
-        if len(tf) > 1:
-            tf = tf.iloc[:-1]
-
-        if len(tf) < 30:
-            return "WAIT", 0, 0
-
-        tf["ema9"] = tf["close"].ewm(
-            span=9,
-            adjust=False
-        ).mean()
-
-        tf["ema21"] = tf["close"].ewm(
-            span=21,
-            adjust=False
-        ).mean()
-
-        delta = tf["close"].diff()
-
-        gain = delta.clip(lower=0)
-        loss = -delta.clip(upper=0)
-
-        avg_gain = gain.ewm(
-            alpha=1/14,
-            adjust=False
-        ).mean()
-
-        avg_loss = loss.ewm(
-            alpha=1/14,
-            adjust=False
-        ).mean()
-
-        rs = avg_gain / avg_loss
-
-        tf["rsi14"] = 100 - (
-            100 / (1 + rs)
-        )
-
-        ema12 = tf["close"].ewm(
-            span=12,
-            adjust=False
-        ).mean()
-
-        ema26 = tf["close"].ewm(
-            span=26,
-            adjust=False
-        ).mean()
-
-        tf["macd"] = ema12 - ema26
-
-        tf["macd_signal"] = tf["macd"].ewm(
-            span=9,
-            adjust=False
-        ).mean()
-
-        x = tf.iloc[-1]
-
-        bull = 0
-        bear = 0
-
-        # EMA trend
-        if x["ema9"] > x["ema21"]:
-            bull += 1
-        elif x["ema9"] < x["ema21"]:
-            bear += 1
-
-        # RSI momentum
-        if x["rsi14"] >= 55:
-            bull += 1
-        elif x["rsi14"] <= 45:
-            bear += 1
-
-        # MACD momentum
-        if x["macd"] > x["macd_signal"]:
-            bull += 1
-        elif x["macd"] < x["macd_signal"]:
-            bear += 1
-
-        # Candle direction
-        if x["close"] > x["open"]:
-            bull += 1
-        elif x["close"] < x["open"]:
-            bear += 1
-
-        if bull >= 3:
-            direction = "BUY"
-
-        elif bear >= 3:
-            direction = "SELL"
-
-        else:
-            direction = "WAIT"
-
-        return direction, bull, bear
-
-
-    timeframes = [
-        2, 3, 5, 7,
-        10, 12, 15, 30
-    ]
-
-    buy_count = 0
-    sell_count = 0
-    wait_count = 0
-
-    print("=" * 45)
-    print("PANDAS MULTI-TIMEFRAME CONFIRMATION")
-    print("=" * 45)
-
-    for minutes in timeframes:
-
-        direction, bull, bear = analyse_tf(minutes)
-
-        print(
-            f"{minutes}m : {direction}"
-            f" | Bull {bull}"
-            f" | Bear {bear}"
-        )
-
-        if direction == "BUY":
-            buy_count += 1
-
-        elif direction == "SELL":
-            sell_count += 1
-
-        else:
-            wait_count += 1
-
-
-    # ===== FINAL MTF VOTING =====
-
-    if buy_count >= 7:
-        mtf_signal = "STRONG BUY"
-
-    elif sell_count >= 7:
-        mtf_signal = "STRONG SELL"
-
-    elif buy_count >= 5:
-        mtf_signal = "BUY"
-
-    elif sell_count >= 5:
-        mtf_signal = "SELL"
-
+    if prev["close"] < prev["open"] and last["close"] > last["open"] and last["close"] > prev["open"] and last["open"] < prev["close"]:
+        engulf = "BUY"
+    elif prev["close"] > prev["open"] and last["close"] < last["open"] and last["open"] > prev["close"] and last["close"] < prev["open"]:
+        engulf = "SELL"
     else:
-        mtf_signal = "WAIT"
+        engulf = "WAIT"
+
+    if lower_wick > 2*body and upper_wick < body:
+        wick_pattern = "BUY"
+    elif upper_wick > 2*body and lower_wick < body:
+        wick_pattern = "SELL"
+    else:
+        wick_pattern = "WAIT"
+
+    if body < (last["high"]-last["low"])*0.1:
+        doji = "WAIT"
+    else:
+        doji = "BUY" if last["close"] > last["open"] else "SELL"
+
+    items["candlestick"] = {
+        "Engulfing Pattern": engulf,
+        "Hammer/Shooting Star": wick_pattern,
+        "Candle Direction": doji,
+    }
+
+    groups = {}
+    for key, indicators in items.items():
+        groups[key] = decide(list(indicators.values()))
+
+    return {
+        "price": last["close"],
+        "items": items,
+        "groups": groups,
+    }
 
 
-    dominant = max(
-        buy_count,
-        sell_count
-    )
+class NonnyApp(App):
+    def build(self):
+        self.root_scroll = ScrollView(size_hint=(1, 1))
+        self.main_layout = BoxLayout(orientation="vertical", size_hint_y=None, spacing=10, padding=15)
+        self.main_layout.bind(minimum_height=self.main_layout.setter("height"))
+        self.root_scroll.add_widget(self.main_layout)
 
-    mtf_confidence = (
-        dominant / len(timeframes)
-    ) * 100
+        self.refresh_ui()
+        Clock.schedule_interval(lambda dt: self.refresh_ui(), 60)
+        return self.root_scroll
+
+    def add_label(self, text, size=16, bold=False, color=(1,1,1,1), height=30):
+        lbl = Label(text=text, font_size=f"{size}sp", bold=bold, color=color,
+                    size_hint_y=None, height=height, halign="left", valign="middle")
+        lbl.bind(size=lbl.setter("text_size"))
+        self.main_layout.add_widget(lbl)
+
+    def color_for(self, signal):
+        if signal == "BUY":
+            return (0.2, 1, 0.2, 1)
+        elif signal == "SELL":
+            return (1, 0.3, 0.3, 1)
+        else:
+            return (0.8, 0.8, 0.3, 1)
+
+    def refresh_ui(self):
+        self.main_layout.clear_widgets()
+
+        data = get_full_analysis()
+        if data is None:
+            self.add_label("Failed to fetch data. Check connection.", size=18, color=(1,0.3,0.3,1))
+            return
+
+        price = data["price"]
+        groups = data["groups"]
+        items = data["items"]
+
+        self.add_label("KALANKAR FX GOLD PRO", size=22, bold=True, height=40)
+        self.add_label("By Mr. Rudvay Ujjwal Kalankar", size=13, height=22, color=(0.7,0.7,0.7,1))
+        self.add_label(f"XAU/USD Price: {price:.2f}", size=18, bold=True, height=35)
+        self.add_label("=" * 40, size=14, height=20)
+
+        # SUMMARY SECTION
+        self.add_label("SUMMARY (5 Groups)", size=20, bold=True, height=35, color=(0.6,0.8,1,1))
+
+        group_labels = {
+            "trend": "Trend",
+            "momentum": "Momentum",
+            "volatility": "Volatility",
+            "sr": "Support/Resistance",
+            "candlestick": "Candlestick",
+        }
+
+        buy_count = sum(1 for g in groups.values() if g == "BUY")
+        sell_count = sum(1 for g in groups.values() if g == "SELL")
+        total = len(groups)
+
+        for key, label in group_labels.items():
+            sig = groups[key]
+            self.add_label(f"{label}: {sig}", size=18, bold=True, color=self.color_for(sig), height=32)
+
+        if buy_count > sell_count:
+            overall = "BUY"
+            agreement = (buy_count/total)*100
+        elif sell_count > buy_count:
+            overall = "SELL"
+            agreement = (sell_count/total)*100
+        else:
+            overall = "WAIT/MIXED"
+            agreement = 0
+
+        self.add_label("-" * 40, size=14, height=20)
+        self.add_label(f"OVERALL: {overall}", size=22, bold=True, color=self.color_for(overall), height=40)
+        if agreement > 0:
+            self.add_label(f"Agreement: {agreement:.0f}% ({max(buy_count,sell_count)}/{total} groups)", size=16, height=28)
+
+        self.add_label("=" * 40, size=14, height=20)
+        self.add_label("FULL DETAIL (All Indicators)", size=20, bold=True, height=35, color=(0.6,0.8,1,1))
+
+        for key, label in group_labels.items():
+            self.add_label(f"--- {label} Group ---", size=17, bold=True, height=30, color=(0.7,0.7,1,1))
+            for ind_name, ind_sig in items[key].items():
+                self.add_label(f"   {ind_name}: {ind_sig}", size=15, color=self.color_for(ind_sig), height=26)
+            self.add_label(f"   GROUP RESULT: {groups[key]}", size=16, bold=True, color=self.color_for(groups[key]), height=28)
+            self.add_label("", size=10, height=10)
+
+        self.add_label("Experimental tool - not financial advice.", size=13, height=25, color=(0.9,0.6,0.2,1))
 
 
-    print("=" * 45)
-
-    print("BUY TFs     :", buy_count)
-    print("SELL TFs    :", sell_count)
-    print("WAIT TFs    :", wait_count)
-
-    print("MTF SIGNAL  :", mtf_signal)
-
-    print(
-        "MTF CONF    :",
-        round(mtf_confidence, 1),
-        "%"
-    )
-
-    print("=" * 45)
-
-
-mtf_from_1m()
-# ===== MASTER TRADE DECISION =====
-
-if filtered_signal == "BUY" and mtf_signal in ["BUY", "STRONG BUY"]:
-    master_signal = "BUY"
-
-elif filtered_signal == "SELL" and mtf_signal in ["SELL", "STRONG SELL"]:
-    master_signal = "SELL"
-
-else:
-    master_signal = "WAIT"
-
-print("MASTER TRADE :", master_signal)
-print("=" * 45)
-# ===== MASTER TRADE LEVELS =====
-
-print("=" * 45)
-
-if master_signal == "BUY":
-    master_entry = last["close"]
-    master_sl = master_entry - (1.5 * last["atr14"])
-    master_tp1 = master_entry + (1.5 * last["atr14"])
-    master_tp2 = master_entry + (3.0 * last["atr14"])
-
-    print("MASTER TRADE : BUY")
-    print("ENTRY        :", round(master_entry, 2))
-    print("SL           :", round(master_sl, 2))
-    print("TP1          :", round(master_tp1, 2))
-    print("TP2          :", round(master_tp2, 2))
-    print("MTF CONF     :", round(mtf_confidence, 1), "%")
-
-elif master_signal == "SELL":
-    master_entry = last["close"]
-    master_sl = master_entry + (1.5 * last["atr14"])
-    master_tp1 = master_entry - (1.5 * last["atr14"])
-    master_tp2 = master_entry - (3.0 * last["atr14"])
-
-    print("MASTER TRADE : SELL")
-    print("ENTRY        :", round(master_entry, 2))
-    print("SL           :", round(master_sl, 2))
-    print("TP1          :", round(master_tp1, 2))
-    print("TP2          :", round(master_tp2, 2))
-    print("MTF CONF     :", round(mtf_confidence, 1), "%")
-
-else:
-    print("MASTER TRADE : WAIT")
-    print("NO TRADE")
-
-print("=" * 45)
-import subprocess
-
-if master_signal in ["BUY", "SELL"]:
-    title = f"Gold AI {master_signal}"
-
-    message = (
-        f"XAUUSD {master_signal} | "
-        f"Entry {round(master_entry, 2)} | "
-        f"SL {round(master_sl, 2)} | "
-        f"TP1 {round(master_tp1, 2)} | "
-        f"TP2 {round(master_tp2, 2)} | "
-        f"MTF {round(mtf_confidence, 1)}%"
-    )
-
-    subprocess.run([
-        "termux-notification",
-        "--id", "gold-ai-signal",
-        "--title", title,
-        "--content", message,
-        "--priority", "high"
-    ])
-# ===== DUPLICATE SIGNAL LOCK =====
-signal_file = ".last_signal"
-
-try:
-    with open(signal_file, "r") as f:
-        last_sent_signal = f.read().strip()
-except FileNotFoundError:
-    last_sent_signal = ""
-
-if master_signal in ["BUY", "SELL"] and master_signal != last_sent_signal:
-    with open(signal_file, "w") as f:
-        f.write(master_signal)
-if master_signal in ["BUY", "SELL"] and master_signal != last_sent_signal:
-    with open(signal_file, "w") as f:
-        f.write(master_signal)
-
-import subprocess
-
-signal_file = ".last_signal"
-
-try:
-    with open(signal_file, "r") as f:
-        last_sent_signal = f.read().strip()
-except FileNotFoundError:
-    last_sent_signal = ""
-
-if master_signal in ["BUY", "SELL"] and master_signal != last_sent_signal:
-    title = f"Gold AI {master_signal}"
-
-    message = (
-        f"XAUUSD {master_signal} | "
-        f"Entry {round(master_entry, 2)} | "
-        f"SL {round(master_sl, 2)} | "
-        f"TP1 {round(master_tp1, 2)} | "
-        f"TP2 {round(master_tp2, 2)} | "
-        f"MTF {round(mtf_confidence, 1)}%"
-    )
-
-    subprocess.run([
-        "termux-notification",
-        "--id", "gold-ai-signal",
-        "--title", title,
-        "--content", message,
-        "--priority", "high"
-    ])
-
-    with open(signal_file, "w") as f:
-        f.write(master_signal)
+if __name__ == "__main__":
+    NonnyApp().run()
