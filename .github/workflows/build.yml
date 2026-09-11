@@ -28,7 +28,7 @@ jobs:
 
       - name: Build APK
         run: |
-          export AUTOPOINT=true
+          sudo bash -c 'printf "#!/bin/bash\nexit 0\n" > /usr/local/bin/autopoint && chmod +x /usr/local/bin/autopoint'
           buildozer -v android debug
 
       - name: Upload APK
