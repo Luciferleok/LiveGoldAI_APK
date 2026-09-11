@@ -23,12 +23,6 @@ jobs:
             autoconf automake libtool pkg-config zlib1g-dev libncurses5-dev \
             libncursesw5-dev libtinfo6 cmake libffi-dev libssl-dev
 
-      - name: Debug autopoint
-        run: |
-          dpkg -L gettext | grep -i autopoint || echo "not in gettext package"
-          apt list --installed 2>/dev/null | grep gettext
-          find / -name "autopoint*" 2>/dev/null
-
       - name: Install buildozer
         run: pip install --upgrade buildozer cython
 
