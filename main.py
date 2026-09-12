@@ -194,7 +194,8 @@ class NonnyApp(App):
         self.main_layout.bind(minimum_height=self.main_layout.setter("height"))
         self.root_scroll.add_widget(self.main_layout)
 
-        self.refresh_ui()
+        self.add_label("Loading data...", size=18, height=30)
+        Clock.schedule_once(lambda dt: self.refresh_ui(), 0.5)
         Clock.schedule_interval(lambda dt: self.refresh_ui(), 60)
         return self.root_scroll
 
