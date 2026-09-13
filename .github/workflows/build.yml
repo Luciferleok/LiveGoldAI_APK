@@ -34,7 +34,7 @@ jobs:
 
       - name: Build APK
         run: |
-          sudo bash -c 'printf "#!/bin/bash\nexit 0\n" > /usr/local/bin/autopoint && chmod +x /usr/local/bin/autopoint'
+          sudo bash -c 'printf "#!/bin/bash\nexit 0\n" > /usr/local/bin/autopoint && chmod +x /usr/local/bin/autopoint && cp /usr/local/bin/autopoint /usr/bin/autopoint'
           export JAVA_HOME=$JAVA_HOME_17_X64
           buildozer -v android debug
 
