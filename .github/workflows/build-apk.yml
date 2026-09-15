@@ -29,9 +29,10 @@ jobs:
 
       - name: Accept Android licenses
         run: |
+          export PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/cmdline-tools/16.0/bin:$PATH"
           yes | sdkmanager --licenses || true
           yes | sdkmanager "build-tools;37.0.0" "platform-tools"
-
+      
       - name: Build APK
         run: buildozer android debug
 
