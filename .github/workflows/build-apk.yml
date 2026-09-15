@@ -32,7 +32,13 @@ jobs:
           export PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/cmdline-tools/16.0/bin:$PATH"
           yes | sdkmanager --licenses || true
           yes | sdkmanager "build-tools;37.0.0" "platform-tools"
-      
+
+      - name: Patch liblzma recipe to skip autoreconf
+        run: |
+          mkdir -p .buildozer/android/platform
+          git clone --depth 1 -b master https://github.com/kivy/python-for-android.git .buildozer/android/platform/python-for-android
+          sed -i "s|shprint(sh.Command('autoreconf'), '-vif', _env=env)|pass  # patched: skip autoreconf|" .buildozer/android/platform/python-for-android/pythonforandroid/recipes/liblzma/__init__.py
+
       - name: Build APK
         run: buildozer android debug
 
