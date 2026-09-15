@@ -1,5 +1,6 @@
 import os
 import logging
+import threading
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 logging.getLogger("requests").setLevel(logging.WARNING)
 import requests
@@ -215,8 +216,15 @@ class NonnyApp(App):
 
     def refresh_ui(self):
         self.main_layout.clear_widgets()
+        self.add_label("Loading data...", size=18, height=30)
+        threading.Thread(target=self._fetch_data, daemon=True).start()
 
+    def _fetch_data(self):
         data = get_full_analysis()
+        Clock.schedule_once(lambda dt: self._build_ui(data), 0)
+
+    def _build_ui(self, data):
+        self.main_layout.clear_widgets()
         if data is None:
             self.add_label("Failed to fetch data. Check connection.", size=18, color=(1,0.3,0.3,1))
             return
