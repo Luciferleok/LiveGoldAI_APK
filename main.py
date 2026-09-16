@@ -202,8 +202,9 @@ class NonnyApp(App):
 
     def add_label(self, text, size=16, bold=False, color=(1,1,1,1), height=30):
         lbl = Label(text=text, font_size=f"{size}sp", bold=bold, color=color,
-                    size_hint_y=None, height=height, halign="left", valign="middle")
-        lbl.bind(size=lbl.setter("text_size"))
+                    size_hint_y=None, halign="left", valign="middle")
+        lbl.bind(width=lambda inst, w: setattr(inst, "text_size", (w, None)))
+        lbl.bind(texture_size=lambda inst, ts: setattr(inst, "height", ts[1] + 10))
         self.main_layout.add_widget(lbl)
 
     def color_for(self, signal):
