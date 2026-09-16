@@ -237,13 +237,13 @@ class NonnyApp(App):
         groups = data["groups"]
         items = data["items"]
 
-        self.add_label("KALANKAR FX GOLD PRO", size=22, bold=True, height=40)
+        self.add_label("KALANKAR FX GOLD PRO", size=22, bold=True, height=40, color=(0.85,0.68,0.22,1))
         self.add_label("By Mr. Rudvay Ujjwal Kalankar", size=13, height=22, color=(0.7,0.7,0.7,1))
         self.add_label(f"XAU/USD Price: {price:.2f}", size=18, bold=True, height=35)
         self.add_label("=" * 40, size=14, height=20)
 
         # SUMMARY SECTION
-        self.add_label("SUMMARY (5 Groups)", size=20, bold=True, height=35, color=(0.6,0.8,1,1))
+        self.add_label("SUMMARY (5 Groups)", size=20, bold=True, height=35, color=(0.85,0.68,0.22,1))
 
         group_labels = {
             "trend": "Trend",
@@ -277,7 +277,7 @@ class NonnyApp(App):
             self.add_label(f"Agreement: {agreement:.0f}% ({max(buy_count,sell_count)}/{total} groups)", size=16, height=28)
 
         self.add_label("=" * 40, size=14, height=20)
-        self.add_label("FULL DETAIL (All Indicators)", size=20, bold=True, height=35, color=(0.6,0.8,1,1))
+        self.add_label("FULL DETAIL (All Indicators)", size=20, bold=True, height=35, color=(0.85,0.68,0.22,1))
 
         for key, label in group_labels.items():
             self.add_label(f"{label.upper()}", size=16, bold=True, height=28, color=(0.93,0.80,0.40,1))
