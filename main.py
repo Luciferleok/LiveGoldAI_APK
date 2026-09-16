@@ -171,10 +171,40 @@ def get_full_analysis():
     else:
         doji = "BUY" if last["close"] > last["open"] else "SELL"
 
+    if body < (last["high"]-last["low"])*0.1:
+        if prev["close"] < prev["open"]:
+            real_doji = "BUY"
+        elif prev["close"] > prev["open"]:
+            real_doji = "SELL"
+        else:
+            real_doji = "WAIT"
+    else:
+        real_doji = "WAIT"
+
+    if lower_wick > 3*body and upper_wick < body:
+        pin_bar = "BUY"
+    elif upper_wick > 3*body and lower_wick < body:
+        pin_bar = "SELL"
+    else:
+        pin_bar = "WAIT"
+
+    if last["high"] < prev["high"] and last["low"] > prev["low"]:
+        if prev["close"] > prev["open"]:
+            inside_bar = "BUY"
+        elif prev["close"] < prev["open"]:
+            inside_bar = "SELL"
+        else:
+            inside_bar = "WAIT"
+    else:
+        inside_bar = "WAIT"
+
     items["candlestick"] = {
         "Engulfing Pattern": engulf,
         "Hammer/Shooting Star": wick_pattern,
         "Candle Direction": doji,
+        "Doji Pattern": real_doji,
+        "Pin Bar": pin_bar,
+        "Inside Bar": inside_bar,
     }
 
     groups = {}
