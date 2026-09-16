@@ -209,11 +209,14 @@ class NonnyApp(App):
 
     def color_for(self, signal):
         if signal == "BUY":
-            return (0.2, 1, 0.2, 1)
+            return (0.16, 0.75, 0.38, 1)
         elif signal == "SELL":
-            return (1, 0.3, 0.3, 1)
+            return (0.90, 0.25, 0.28, 1)
         else:
-            return (0.8, 0.8, 0.3, 1)
+            return (0.93, 0.80, 0.40, 1)
+
+    def add_divider(self):
+        self.add_label("-" * 40, size=12, height=16, color=(0.85,0.68,0.22,1))
 
     def refresh_ui(self):
         self.main_layout.clear_widgets()
@@ -277,14 +280,14 @@ class NonnyApp(App):
         self.add_label("FULL DETAIL (All Indicators)", size=20, bold=True, height=35, color=(0.6,0.8,1,1))
 
         for key, label in group_labels.items():
-            self.add_label(f"{label.upper()}", size=16, bold=True, height=28, color=GOLD_SOFT)
+            self.add_label(f"{label.upper()}", size=16, bold=True, height=28, color=(0.93,0.80,0.40,1))
             for ind_name, ind_sig in items[key].items():
-                self.add_label(f"   {ind_name}", size=14, color=MUTED, height=20)
+                self.add_label(f"   {ind_name}", size=14, color=(0.60,0.60,0.66,1), height=20)
                 self.add_label(f"      {ind_sig}", size=15, bold=True, color=self.color_for(ind_sig), height=24)
             self.add_label(f"Group Result: {groups[key]}", size=16, bold=True, color=self.color_for(groups[key]), height=28)
             self.add_divider()
 
-        self.add_label("Experimental tool  -  not financial advice", size=12, height=22, color=MUTED)
+        self.add_label("Experimental tool  -  not financial advice", size=12, height=22, color=(0.60,0.60,0.66,1))
 
 
 if __name__ == "__main__":
