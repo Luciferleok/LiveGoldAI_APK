@@ -277,13 +277,14 @@ class NonnyApp(App):
         self.add_label("FULL DETAIL (All Indicators)", size=20, bold=True, height=35, color=(0.6,0.8,1,1))
 
         for key, label in group_labels.items():
-            self.add_label(f"--- {label} Group ---", size=17, bold=True, height=30, color=(0.7,0.7,1,1))
+            self.add_label(f"{label.upper()}", size=16, bold=True, height=28, color=GOLD_SOFT)
             for ind_name, ind_sig in items[key].items():
-                self.add_label(f"   {ind_name}: {ind_sig}", size=15, color=self.color_for(ind_sig), height=26)
-            self.add_label(f"   GROUP RESULT: {groups[key]}", size=16, bold=True, color=self.color_for(groups[key]), height=28)
-            self.add_label("", size=10, height=10)
+                self.add_label(f"   {ind_name}", size=14, color=MUTED, height=20)
+                self.add_label(f"      {ind_sig}", size=15, bold=True, color=self.color_for(ind_sig), height=24)
+            self.add_label(f"Group Result: {groups[key]}", size=16, bold=True, color=self.color_for(groups[key]), height=28)
+            self.add_divider()
 
-        self.add_label("Experimental tool - not financial advice.", size=13, height=25, color=(0.9,0.6,0.2,1))
+        self.add_label("Experimental tool  -  not financial advice", size=12, height=22, color=MUTED)
 
 
 if __name__ == "__main__":
