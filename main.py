@@ -15,6 +15,7 @@ from kivy.uix.label import Label
 from kivy.clock import Clock
 
 from sentiment_signal import get_sentiment_signal
+from signal_logger import log_signal
 
 API_KEY = "8e1493529b8e42d9b0a9e557c3451db0"
 SYMBOL = "XAU/USD"
@@ -317,6 +318,12 @@ class NonnyApp(App):
         else:
             overall = "WAIT/MIXED"
             agreement = 0
+
+        # Log this signal to history so accuracy can be checked later
+        try:
+            log_signal(groups, overall, agreement, price, base_dir=self.user_data_dir)
+        except Exception as e:
+            print(f"[signal_logger] Failed to log signal: {e}")
 
         self.add_label("-" * 40, size=14, height=20)
         self.add_label(f"OVERALL: {overall}", size=22, bold=True, color=self.color_for(overall), height=40)
