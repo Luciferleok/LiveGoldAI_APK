@@ -15,7 +15,7 @@ from kivy.uix.label import Label
 from kivy.clock import Clock
 
 from sentiment_signal import get_sentiment_signal
-from signal_logger import log_signal
+from signal_logger import log_signal, export_log, get_export_dir
 
 API_KEY = "8e1493529b8e42d9b0a9e557c3451db0"
 SYMBOL = "XAU/USD"
@@ -319,11 +319,14 @@ class NonnyApp(App):
             overall = "WAIT/MIXED"
             agreement = 0
 
-        # Log this signal to history so accuracy can be checked later
+        # Log this signal to history, then copy it to an accessible folder
+        # (Android/data/<package>/files/) so it can be pulled and analyzed later.
+        export_path = None
         try:
             log_signal(groups, overall, agreement, price, base_dir=self.user_data_dir)
+            export_path = export_log(base_dir=self.user_data_dir)
         except Exception as e:
-            print(f"[signal_logger] Failed to log signal: {e}")
+            print(f"[signal_logger] Failed to log/export signal: {e}")
 
         self.add_label("-" * 40, size=14, height=20)
         self.add_label(f"OVERALL: {overall}", size=22, bold=True, color=self.color_for(overall), height=40)
@@ -342,6 +345,8 @@ class NonnyApp(App):
             self.add_divider()
 
         self.add_label("Experimental tool  -  not financial advice", size=12, height=22, color=(0.60,0.60,0.66,1))
+        if export_path:
+            self.add_label(f"Log exported to: {export_path}", size=10, height=18, color=(0.5,0.5,0.55,1))
 
 
 if __name__ == "__main__":
