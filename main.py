@@ -6,6 +6,7 @@ logging.getLogger("requests").setLevel(logging.WARNING)
 import requests
 import pandas as pd
 import numpy as np
+
 from kivy.app import App
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.boxlayout import BoxLayout
@@ -13,8 +14,11 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
 from kivy.clock import Clock
 
+from sentiment_signal import get_sentiment_signal
+
 API_KEY = "8e1493529b8e42d9b0a9e557c3451db0"
 SYMBOL = "XAU/USD"
+
 
 def fetch_data(interval="4h", size=100):
     url = "https://api.twelvedata.com/time_series"
@@ -27,6 +31,7 @@ def fetch_data(interval="4h", size=100):
     for col in ["open", "high", "low", "close"]:
         df[col] = pd.to_numeric(df[col])
     return df
+
 
 def add_all_indicators(df):
     df["ema9"] = df["close"].ewm(span=9, adjust=False).mean()
@@ -94,6 +99,7 @@ def add_all_indicators(df):
 
     return df
 
+
 def decide(votes):
     buy = votes.count("BUY")
     sell = votes.count("SELL")
@@ -103,6 +109,7 @@ def decide(votes):
         return "SELL"
     else:
         return "WAIT"
+
 
 def get_full_analysis():
     df = fetch_data("4h", 100)
@@ -114,7 +121,6 @@ def get_full_analysis():
 
     items = {}
 
-    # TREND
     items["trend"] = {
         "EMA9 vs EMA21": "BUY" if last["ema9"] > last["ema21"] else "SELL",
         "Close vs EMA50": "BUY" if last["close"] > last["ema50"] else "SELL",
@@ -123,7 +129,6 @@ def get_full_analysis():
         "Parabolic SAR": "BUY" if last["sar_bull"] else "SELL",
     }
 
-    # MOMENTUM
     items["momentum"] = {
         "RSI14": "BUY" if last["rsi14"]>=55 else ("SELL" if last["rsi14"]<=45 else "WAIT"),
         "Stochastic %K": "BUY" if last["stoch_k"]<20 else ("SELL" if last["stoch_k"]>80 else "WAIT"),
@@ -132,7 +137,6 @@ def get_full_analysis():
         "ROC": "BUY" if last["roc"]>0 else "SELL",
     }
 
-    # VOLATILITY
     lower_std = last["bb_mid"] - (2*last["std20"])
     upper_std = last["bb_mid"] + (2*last["std20"])
     items["volatility"] = {
@@ -141,13 +145,11 @@ def get_full_analysis():
         "Std Dev Bands": "BUY" if last["close"]<lower_std else ("SELL" if last["close"]>upper_std else "WAIT"),
     }
 
-    # SUPPORT/RESISTANCE
     items["sr"] = {
         "Pivot Point": "BUY" if last["close"]>last["pivot"] else "SELL",
         "R1/S1 Levels": "BUY" if last["close"]<last["s1"] else ("SELL" if last["close"]>last["r1"] else "WAIT"),
     }
 
-    # CANDLESTICK
     body = abs(last["close"] - last["open"])
     upper_wick = last["high"] - max(last["close"], last["open"])
     lower_wick = min(last["close"], last["open"]) - last["low"]
@@ -205,6 +207,21 @@ def get_full_analysis():
         "Doji Pattern": real_doji,
         "Pin Bar": pin_bar,
         "Inside Bar": inside_bar,
+    }
+
+    try:
+        sentiment_result = get_sentiment_signal()
+        sentiment_sig = sentiment_result["signal"]
+        sentiment_score = sentiment_result["avg_sentiment"]
+        sentiment_count = sentiment_result["article_count"]
+    except Exception:
+        sentiment_sig = "WAIT"
+        sentiment_score = 0.0
+        sentiment_count = 0
+
+    items["sentiment"] = {
+        f"News Sentiment ({sentiment_count} articles)": sentiment_sig,
+        f"Avg Score: {sentiment_score:.4f}": sentiment_sig,
     }
 
     groups = {}
@@ -272,8 +289,7 @@ class NonnyApp(App):
         self.add_label(f"XAU/USD Price: {price:.2f}", size=18, bold=True, height=35)
         self.add_label("=" * 40, size=14, height=20)
 
-        # SUMMARY SECTION
-        self.add_label("SUMMARY (5 Groups)", size=20, bold=True, height=35, color=(0.85,0.68,0.22,1))
+        self.add_label("SUMMARY (6 Groups)", size=20, bold=True, height=35, color=(0.85,0.68,0.22,1))
 
         group_labels = {
             "trend": "Trend",
@@ -281,6 +297,7 @@ class NonnyApp(App):
             "volatility": "Volatility",
             "sr": "Support/Resistance",
             "candlestick": "Candlestick",
+            "sentiment": "News Sentiment",
         }
 
         buy_count = sum(1 for g in groups.values() if g == "BUY")
