@@ -615,8 +615,8 @@ object TechnicalEngine {
     private fun format2(v: Double): String = String.format(Locale.US, "%.2f", v)
 
     fun fallbackAnalysis(interval: String = "4h"): GoldAnalysisResult {
-        // High quality realistic Gold data for offline or rate-limited backup
-        val basePrice = 2742.60
+        // High quality realistic Gold data for offline or backup
+        val basePrice = 4378.50
         val dummyCandles = mutableListOf<CandleBar>()
         var p = basePrice - 15.0
         for (i in 0 until 50) {
@@ -628,7 +628,7 @@ object TechnicalEngine {
             p = close
             dummyCandles.add(
                 CandleBar(
-                    datetime = "2026-09-16 ${String.format(Locale.US, "%02d:00", (i % 24))}",
+                    datetime = "2026-09-20 ${String.format(Locale.US, "%02d:00", (i % 24))}",
                     open = open,
                     high = high,
                     low = low,

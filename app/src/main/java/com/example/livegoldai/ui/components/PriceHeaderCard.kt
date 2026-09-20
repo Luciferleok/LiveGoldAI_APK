@@ -337,7 +337,7 @@ fun PriceHeaderCard(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        text = "Real-time TwelveData limit reached • Showing cached gold stream",
+                        text = "Offline / Network limited • Showing cached gold stream",
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelMedium.copy(fontSize = 10.sp),
                         color = SignalWaitText
