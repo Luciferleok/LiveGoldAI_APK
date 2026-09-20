@@ -12,10 +12,11 @@ from kivy.uix.scrollview import ScrollView
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
+from kivy.uix.button import Button
 from kivy.clock import Clock
 
 from sentiment_signal import get_sentiment_signal
-from signal_logger import log_signal, export_log, get_export_dir
+from signal_logger import log_signal, export_log, share_log
 
 API_KEY = "8e1493529b8e42d9b0a9e557c3451db0"
 SYMBOL = "XAU/USD"
@@ -266,6 +267,14 @@ class NonnyApp(App):
     def add_divider(self):
         self.add_label("-" * 40, size=12, height=16, color=(0.85,0.68,0.22,1))
 
+    def share_signal_log(self, instance=None):
+        try:
+            ok = share_log(base_dir=self.user_data_dir)
+            if not ok:
+                print("[main] Nothing to share yet (no log file).")
+        except Exception as e:
+            print(f"[main] Failed to share log: {e}")
+
     def refresh_ui(self):
         self.main_layout.clear_widgets()
         self.add_label("Loading data...", size=18, height=30)
@@ -288,6 +297,17 @@ class NonnyApp(App):
         self.add_label("KALANKAR FX GOLD PRO", size=22, bold=True, height=40, color=(0.85,0.68,0.22,1))
         self.add_label("By Mr. Rudvay Ujjwal Kalankar", size=13, height=22, color=(0.7,0.7,0.7,1))
         self.add_label(f"XAU/USD Price: {price:.2f}", size=18, bold=True, height=35)
+
+        share_btn = Button(
+            text="Share Signal Log",
+            size_hint_y=None,
+            height=70,
+            background_color=(0.16, 0.75, 0.38, 1),
+            color=(1, 1, 1, 1),
+        )
+        share_btn.bind(on_release=self.share_signal_log)
+        self.main_layout.add_widget(share_btn)
+
         self.add_label("=" * 40, size=14, height=20)
 
         self.add_label("SUMMARY (6 Groups)", size=20, bold=True, height=35, color=(0.85,0.68,0.22,1))
@@ -319,12 +339,12 @@ class NonnyApp(App):
             overall = "WAIT/MIXED"
             agreement = 0
 
-        # Log this signal to history, then copy it to an accessible folder
-        # (Android/data/<package>/files/) so it can be pulled and analyzed later.
-        export_path = None
+        # Log this signal to history, and also copy it to the app's
+        # external files folder (for completeness, even though that
+        # folder isn't browsable by other apps on Android 11+).
         try:
             log_signal(groups, overall, agreement, price, base_dir=self.user_data_dir)
-            export_path = export_log(base_dir=self.user_data_dir)
+            export_log(base_dir=self.user_data_dir)
         except Exception as e:
             print(f"[signal_logger] Failed to log/export signal: {e}")
 
@@ -345,8 +365,6 @@ class NonnyApp(App):
             self.add_divider()
 
         self.add_label("Experimental tool  -  not financial advice", size=12, height=22, color=(0.60,0.60,0.66,1))
-        if export_path:
-            self.add_label(f"Log exported to: {export_path}", size=10, height=18, color=(0.5,0.5,0.55,1))
 
 
 if __name__ == "__main__":
