@@ -1,0 +1,6 @@
+{
+  "name": "Kalankar FX Gold Pro",
+  "description": "Live XAU/USD Gold technical analysis, multi-timeframe indicator signals, and trading intelligence by Rudvay Ujjwal Kalankar.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

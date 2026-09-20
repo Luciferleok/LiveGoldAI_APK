@@ -6,21 +6,15 @@ logging.getLogger("requests").setLevel(logging.WARNING)
 import requests
 import pandas as pd
 import numpy as np
-
 from kivy.app import App
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
-from kivy.uix.button import Button
 from kivy.clock import Clock
-
-from sentiment_signal import get_sentiment_signal
-from signal_logger import log_signal, export_log, share_log
 
 API_KEY = "8e1493529b8e42d9b0a9e557c3451db0"
 SYMBOL = "XAU/USD"
-
 
 def fetch_data(interval="4h", size=100):
     url = "https://api.twelvedata.com/time_series"
@@ -33,7 +27,6 @@ def fetch_data(interval="4h", size=100):
     for col in ["open", "high", "low", "close"]:
         df[col] = pd.to_numeric(df[col])
     return df
-
 
 def add_all_indicators(df):
     df["ema9"] = df["close"].ewm(span=9, adjust=False).mean()
@@ -101,7 +94,6 @@ def add_all_indicators(df):
 
     return df
 
-
 def decide(votes):
     buy = votes.count("BUY")
     sell = votes.count("SELL")
@@ -111,7 +103,6 @@ def decide(votes):
         return "SELL"
     else:
         return "WAIT"
-
 
 def get_full_analysis():
     df = fetch_data("4h", 100)
@@ -123,6 +114,7 @@ def get_full_analysis():
 
     items = {}
 
+    # TREND
     items["trend"] = {
         "EMA9 vs EMA21": "BUY" if last["ema9"] > last["ema21"] else "SELL",
         "Close vs EMA50": "BUY" if last["close"] > last["ema50"] else "SELL",
@@ -131,6 +123,7 @@ def get_full_analysis():
         "Parabolic SAR": "BUY" if last["sar_bull"] else "SELL",
     }
 
+    # MOMENTUM
     items["momentum"] = {
         "RSI14": "BUY" if last["rsi14"]>=55 else ("SELL" if last["rsi14"]<=45 else "WAIT"),
         "Stochastic %K": "BUY" if last["stoch_k"]<20 else ("SELL" if last["stoch_k"]>80 else "WAIT"),
@@ -139,6 +132,7 @@ def get_full_analysis():
         "ROC": "BUY" if last["roc"]>0 else "SELL",
     }
 
+    # VOLATILITY
     lower_std = last["bb_mid"] - (2*last["std20"])
     upper_std = last["bb_mid"] + (2*last["std20"])
     items["volatility"] = {
@@ -147,11 +141,13 @@ def get_full_analysis():
         "Std Dev Bands": "BUY" if last["close"]<lower_std else ("SELL" if last["close"]>upper_std else "WAIT"),
     }
 
+    # SUPPORT/RESISTANCE
     items["sr"] = {
         "Pivot Point": "BUY" if last["close"]>last["pivot"] else "SELL",
         "R1/S1 Levels": "BUY" if last["close"]<last["s1"] else ("SELL" if last["close"]>last["r1"] else "WAIT"),
     }
 
+    # CANDLESTICK
     body = abs(last["close"] - last["open"])
     upper_wick = last["high"] - max(last["close"], last["open"])
     lower_wick = min(last["close"], last["open"]) - last["low"]
@@ -175,55 +171,10 @@ def get_full_analysis():
     else:
         doji = "BUY" if last["close"] > last["open"] else "SELL"
 
-    if body < (last["high"]-last["low"])*0.1:
-        if prev["close"] < prev["open"]:
-            real_doji = "BUY"
-        elif prev["close"] > prev["open"]:
-            real_doji = "SELL"
-        else:
-            real_doji = "WAIT"
-    else:
-        real_doji = "WAIT"
-
-    if lower_wick > 3*body and upper_wick < body:
-        pin_bar = "BUY"
-    elif upper_wick > 3*body and lower_wick < body:
-        pin_bar = "SELL"
-    else:
-        pin_bar = "WAIT"
-
-    if last["high"] < prev["high"] and last["low"] > prev["low"]:
-        if prev["close"] > prev["open"]:
-            inside_bar = "BUY"
-        elif prev["close"] < prev["open"]:
-            inside_bar = "SELL"
-        else:
-            inside_bar = "WAIT"
-    else:
-        inside_bar = "WAIT"
-
     items["candlestick"] = {
         "Engulfing Pattern": engulf,
         "Hammer/Shooting Star": wick_pattern,
         "Candle Direction": doji,
-        "Doji Pattern": real_doji,
-        "Pin Bar": pin_bar,
-        "Inside Bar": inside_bar,
-    }
-
-    try:
-        sentiment_result = get_sentiment_signal()
-        sentiment_sig = sentiment_result["signal"]
-        sentiment_score = sentiment_result["avg_sentiment"]
-        sentiment_count = sentiment_result["article_count"]
-    except Exception:
-        sentiment_sig = "WAIT"
-        sentiment_score = 0.0
-        sentiment_count = 0
-
-    items["sentiment"] = {
-        f"News Sentiment ({sentiment_count} articles)": sentiment_sig,
-        f"Avg Score: {sentiment_score:.4f}": sentiment_sig,
     }
 
     groups = {}
@@ -267,14 +218,6 @@ class NonnyApp(App):
     def add_divider(self):
         self.add_label("-" * 40, size=12, height=16, color=(0.85,0.68,0.22,1))
 
-    def share_signal_log(self, instance=None):
-        try:
-            ok = share_log(base_dir=self.user_data_dir)
-            if not ok:
-                print("[main] Nothing to share yet (no log file).")
-        except Exception as e:
-            print(f"[main] Failed to share log: {e}")
-
     def refresh_ui(self):
         self.main_layout.clear_widgets()
         self.add_label("Loading data...", size=18, height=30)
@@ -294,23 +237,13 @@ class NonnyApp(App):
         groups = data["groups"]
         items = data["items"]
 
-        self.add_label("KALANKAR FX GOLD PRO", size=22, bold=True, height=40, color=(0.85,0.68,0.22,1))
+        self.add_label("KALANKAR FX GOLD PRO", size=22, bold=True, height=40)
         self.add_label("By Mr. Rudvay Ujjwal Kalankar", size=13, height=22, color=(0.7,0.7,0.7,1))
         self.add_label(f"XAU/USD Price: {price:.2f}", size=18, bold=True, height=35)
-
-        share_btn = Button(
-            text="Share Signal Log",
-            size_hint_y=None,
-            height=70,
-            background_color=(0.16, 0.75, 0.38, 1),
-            color=(1, 1, 1, 1),
-        )
-        share_btn.bind(on_release=self.share_signal_log)
-        self.main_layout.add_widget(share_btn)
-
         self.add_label("=" * 40, size=14, height=20)
 
-        self.add_label("SUMMARY (6 Groups)", size=20, bold=True, height=35, color=(0.85,0.68,0.22,1))
+        # SUMMARY SECTION
+        self.add_label("SUMMARY (5 Groups)", size=20, bold=True, height=35, color=(0.6,0.8,1,1))
 
         group_labels = {
             "trend": "Trend",
@@ -318,7 +251,6 @@ class NonnyApp(App):
             "volatility": "Volatility",
             "sr": "Support/Resistance",
             "candlestick": "Candlestick",
-            "sentiment": "News Sentiment",
         }
 
         buy_count = sum(1 for g in groups.values() if g == "BUY")
@@ -339,22 +271,13 @@ class NonnyApp(App):
             overall = "WAIT/MIXED"
             agreement = 0
 
-        # Log this signal to history, and also copy it to the app's
-        # external files folder (for completeness, even though that
-        # folder isn't browsable by other apps on Android 11+).
-        try:
-            log_signal(groups, overall, agreement, price, base_dir=self.user_data_dir)
-            export_log(base_dir=self.user_data_dir)
-        except Exception as e:
-            print(f"[signal_logger] Failed to log/export signal: {e}")
-
         self.add_label("-" * 40, size=14, height=20)
         self.add_label(f"OVERALL: {overall}", size=22, bold=True, color=self.color_for(overall), height=40)
         if agreement > 0:
             self.add_label(f"Agreement: {agreement:.0f}% ({max(buy_count,sell_count)}/{total} groups)", size=16, height=28)
 
         self.add_label("=" * 40, size=14, height=20)
-        self.add_label("FULL DETAIL (All Indicators)", size=20, bold=True, height=35, color=(0.85,0.68,0.22,1))
+        self.add_label("FULL DETAIL (All Indicators)", size=20, bold=True, height=35, color=(0.6,0.8,1,1))
 
         for key, label in group_labels.items():
             self.add_label(f"{label.upper()}", size=16, bold=True, height=28, color=(0.93,0.80,0.40,1))

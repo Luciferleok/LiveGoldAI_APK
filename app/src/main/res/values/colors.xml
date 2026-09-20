@@ -1,0 +1,9 @@
+<resources>
+    <color name="gold_primary">#F5B800</color>
+    <color name="gold_dark">#C49300</color>
+    <color name="gold_light">#FFE082</color>
+    <color name="bg_dark">#0D0F15</color>
+    <color name="surface_dark">#151922</color>
+    <color name="signal_buy">#00E676</color>
+    <color name="signal_sell">#FF5252</color>
+</resources>

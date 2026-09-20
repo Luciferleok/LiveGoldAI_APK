@@ -1,0 +1,25 @@
+<resources>
+    <string name="app_name">Kalankar FX Gold Pro</string>
+    <string name="app_subtitle">Trading Intelligence by Rudvay Ujjwal Kalankar</string>
+    <string name="symbol_gold">XAU/USD</string>
+    <string name="gold_market">Gold Spot / US Dollar</string>
+    <string name="live_signal">Live Signal</string>
+    <string name="overall_consensus">Overall Consensus</string>
+    <string name="strong_buy">STRONG BUY</string>
+    <string name="buy">BUY</string>
+    <string name="sell">SELL</string>
+    <string name="strong_sell">STRONG SELL</string>
+    <string name="wait">WAIT / MIXED</string>
+    <string name="trend_analysis">Trend Analysis</string>
+    <string name="momentum_oscillators">Momentum Oscillators</string>
+    <string name="volatility_channels">Volatility Channels</string>
+    <string name="support_resistance">Support &amp; Resistance</string>
+    <string name="candlestick_patterns">Candlestick Patterns</string>
+    <string name="refresh">Refresh</string>
+    <string name="settings">Settings</string>
+    <string name="trade_setup">Trade Setup</string>
+    <string name="position_calculator">Lot &amp; Risk Calculator</string>
+    <string name="market_sessions">Global Market Sessions</string>
+    <string name="price_alert">Price Alert</string>
+    <string name="experimental_disclaimer">Experimental analysis tool — Not financial advice. Always practice risk management.</string>
+</resources>
