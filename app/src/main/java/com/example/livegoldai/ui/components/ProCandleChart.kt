@@ -38,8 +38,9 @@ fun ProCandleChart(
     if (candles.isEmpty()) return
 
     var candleCount by remember { mutableIntStateOf(30) }
+    var showSuperTrend by remember { mutableStateOf(true) }
     var showEma by remember { mutableStateOf(true) }
-    var showBb by remember { mutableStateOf(true) }
+    var showBb by remember { mutableStateOf(false) }
     var showVolume by remember { mutableStateOf(true) }
 
     var selectedCandleIndex by remember { mutableStateOf<Int?>(null) }
@@ -319,6 +320,36 @@ fun ProCandleChart(
                         }
                     }
 
+                    // Draw SuperTrend (10, 3.0) Line & Trail
+                    if (showSuperTrend) {
+                        for (i in 0 until count) {
+                            val stVal = displayCandles[i].superTrend ?: continue
+                            val isBull = displayCandles[i].close >= stVal
+                            val stColor = if (isBull) NeonGreen else NeonRed
+                            val leftX = i * slotWidth
+                            val rightX = (i + 1) * slotWidth
+                            val y = priceToY(stVal)
+                            drawLine(
+                                color = stColor,
+                                start = Offset(leftX, y),
+                                end = Offset(rightX, y),
+                                strokeWidth = 2.5f
+                            )
+                            if (i > 0) {
+                                val prevSt = displayCandles[i - 1].superTrend
+                                if (prevSt != null) {
+                                    val prevY = priceToY(prevSt)
+                                    drawLine(
+                                        color = stColor.copy(alpha = 0.6f),
+                                        start = Offset(leftX, prevY),
+                                        end = Offset(leftX, y),
+                                        strokeWidth = 1.5f
+                                    )
+                                }
+                            }
+                        }
+                    }
+
                     // Draw Candlesticks (Wick + Body)
                     displayCandles.forEachIndexed { index, candle ->
                         val isBullish = candle.close >= candle.open
@@ -392,8 +423,14 @@ fun ProCandleChart(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Toggles for EMA, BB, Volume
+                // Toggles for SuperTrend, EMA, BB, Volume
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    ChartToggleChip(
+                        label = "SUPERTREND",
+                        isActive = showSuperTrend,
+                        activeColor = NeonGreen,
+                        onClick = { showSuperTrend = !showSuperTrend }
+                    )
                     ChartToggleChip(
                         label = "EMA 9/21",
                         isActive = showEma,

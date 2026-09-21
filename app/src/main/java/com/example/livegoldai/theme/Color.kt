@@ -22,16 +22,19 @@ val SignalBuy = Color(0xFF00E676)
 val SignalBuyContainer = Color(0xFF0A331E)
 val SignalBuyBg = Color(0xFF0A331E)
 val SignalBuyText = Color(0xFF69F0AE)
+val NeonGreen = SignalBuy
 
 val SignalSell = Color(0xFFFF3B30)
 val SignalSellContainer = Color(0xFF381214)
 val SignalSellBg = Color(0xFF381214)
 val SignalSellText = Color(0xFFFF8A80)
+val NeonRed = SignalSell
 
 val SignalWait = Color(0xFFFFB300)
 val SignalWaitContainer = Color(0xFF33270A)
 val SignalWaitBg = Color(0xFF33270A)
 val SignalWaitText = Color(0xFFFFD54F)
+val AmberWarning = SignalWait
 
 // Text Colors
 val TextPrimary = Color(0xFFF1F5F9)

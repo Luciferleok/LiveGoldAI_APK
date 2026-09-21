@@ -3,6 +3,7 @@ package com.example.livegoldai.ui
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -24,11 +25,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.livegoldai.R
 import com.example.livegoldai.theme.*
 import com.example.livegoldai.ui.components.*
 import java.util.Locale
@@ -76,36 +80,27 @@ fun GoldHomeScreen(
             TopAppBar(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
+                        Image(
+                            painter = painterResource(id = R.drawable.img_royal_gold_emblem),
+                            contentDescription = "Kalankar FX Gold Royal Logo",
                             modifier = Modifier
-                                .size(36.dp)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(
-                                    Brush.linearGradient(
-                                        listOf(GoldPrimary, GoldDark)
-                                    )
-                                )
-                                .border(1.dp, GoldLight, RoundedCornerShape(10.dp)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "FX",
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Black,
-                                color = ObsidianBackground
-                            )
-                        }
+                                .size(42.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .border(1.5.dp, GoldPrimary, RoundedCornerShape(12.dp)),
+                            contentScale = ContentScale.Crop
+                        )
 
-                        Spacer(modifier = Modifier.width(12.dp))
+                        Spacer(modifier = Modifier.width(10.dp))
 
                         Column {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
-                                    text = "KALANKAR FX",
+                                    text = "KALANKAR FX GOLD PRO",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Black,
                                     color = TextPrimary,
-                                    letterSpacing = 0.5.sp
+                                    letterSpacing = 0.5.sp,
+                                    fontSize = 15.sp
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Box(
@@ -116,9 +111,10 @@ fun GoldHomeScreen(
                                 )
                             }
                             Text(
-                                text = "By Rudvay Ujjwal Kalankar",
-                                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 11.sp),
-                                color = TextGold
+                                text = "VIP BULLION TERMINAL • By Rudvay Ujjwal Kalankar",
+                                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 10.sp),
+                                color = TextGold,
+                                fontWeight = FontWeight.SemiBold
                             )
                         }
                     }
@@ -212,7 +208,14 @@ fun GoldHomeScreen(
 
                 uiState.data != null -> {
                     val analysis = uiState.data!!
-                    val tabs = listOf("ALL", "TREND", "MOMENTUM", "VOLATILITY", "PIVOTS", "CANDLES")
+                    val tabs = listOf(
+                        "🎯 VIP COCKPIT",
+                        "🕯️ CANDLE & MTF",
+                        "📈 CHART & SMC",
+                        "🌍 MACRO & NEWS",
+                        "⚡ PRO TRICKS",
+                        "📊 32 INDICATORS"
+                    )
 
                     LazyColumn(
                         modifier = Modifier
@@ -277,7 +280,7 @@ fun GoldHomeScreen(
                             }
                         }
 
-                        // Live Price Card with timeframes
+                        // 1. Live Price Card with timeframes
                         item(key = "price_header") {
                             PriceHeaderCard(
                                 analysis = analysis,
@@ -292,38 +295,15 @@ fun GoldHomeScreen(
                             )
                         }
 
-                        // Actionable Trade Setup Card (Signal, Entry, SL, TP1, TP2, R:R, Copy Plan)
-                        item(key = "trade_setup") {
-                            TradeSetupCard(
-                                setup = analysis.tradeSetup,
-                                onOpenCalculator = { slPips -> viewModel.openLotCalculator(slPips) }
+                        // 2. Executive 1-Glance Snapshot HUD (Direction, Entry, Seal SL, Target TP1)
+                        item(key = "executive_hud") {
+                            ExecutiveSummaryBar(
+                                analysis = analysis,
+                                onTabSelect = { tabIndex -> viewModel.setTab(tabIndex) }
                             )
                         }
 
-                        // Hero Consensus Card (Votes breakdown & overall bias)
-                        item(key = "hero_consensus") {
-                            HeroConsensusCard(analysis = analysis)
-                        }
-
-                        // Pro Interactive Candlestick Action Chart (Scrub crosshair, EMA 9/21, BB, Volume, Zoom)
-                        item(key = "pro_chart") {
-                            ProCandleChart(candles = analysis.recentCandles)
-                        }
-
-                        // Global Market Sessions Card (London, NY, Tokyo, Sydney & Golden Overlap)
-                        item(key = "market_sessions") {
-                            MarketSessionsCard(sessions = analysis.marketSessions)
-                        }
-
-                        // Floor Pivot Price Ladder
-                        item(key = "pivot_ladder") {
-                            PivotLadderCard(
-                                currentPrice = analysis.currentPrice,
-                                pivotLevels = analysis.pivotLevels
-                            )
-                        }
-
-                        // Category Filter Tabs
+                        // 3. Category Filter Tabs (Smooth, Intuitive Navigation)
                         item(key = "category_tabs") {
                             ScrollableTabRow(
                                 selectedTabIndex = uiState.selectedTab,
@@ -359,18 +339,117 @@ fun GoldHomeScreen(
                             }
                         }
 
-                        // Indicator Group Cards based on selected tab
-                        val filteredGroups = when (uiState.selectedTab) {
-                            1 -> analysis.groups.filter { it.key == "trend" }
-                            2 -> analysis.groups.filter { it.key == "momentum" }
-                            3 -> analysis.groups.filter { it.key == "volatility" }
-                            4 -> analysis.groups.filter { it.key == "sr" }
-                            5 -> analysis.groups.filter { it.key == "candlestick" }
-                            else -> analysis.groups
+                        // --- TAB 0: 🎯 VIP COCKPIT ---
+                        if (uiState.selectedTab == 0) {
+                            analysis.nextPrediction?.let { prediction ->
+                                item(key = "prediction_oracle") {
+                                    PredictionOracleCard(
+                                        prediction = prediction,
+                                        onOpenCalculator = {
+                                            val slPips = analysis.tradeSetup.stopLossPips
+                                            viewModel.openLotCalculator(slPips)
+                                        }
+                                    )
+                                }
+                            }
+
+                            item(key = "pro_chart_cockpit") {
+                                ProCandleChart(candles = analysis.recentCandles)
+                            }
+
+                            if (analysis.candleInsight != null && analysis.mtfMatrix != null) {
+                                item(key = "candle_mtf_cockpit") {
+                                    CandleMtfOracleCard(
+                                        candleInsight = analysis.candleInsight!!,
+                                        mtfMatrix = analysis.mtfMatrix!!,
+                                        tradingTricks = analysis.tradingTricks
+                                    )
+                                }
+                            }
                         }
 
-                        items(filteredGroups, key = { it.key }) { group ->
-                            IndicatorGroupCard(group = group)
+                        // --- TAB 1: 🕯️ CANDLE & MTF ---
+                        if (uiState.selectedTab == 1) {
+                            if (analysis.candleInsight != null && analysis.mtfMatrix != null) {
+                                item(key = "candle_mtf_page") {
+                                    CandleMtfOracleCard(
+                                        candleInsight = analysis.candleInsight!!,
+                                        mtfMatrix = analysis.mtfMatrix!!,
+                                        tradingTricks = analysis.tradingTricks
+                                    )
+                                }
+                            }
+
+                            item(key = "pro_chart_candle") {
+                                ProCandleChart(candles = analysis.recentCandles)
+                            }
+                        }
+
+                        // --- TAB 2: 📈 CHART & SMC ---
+                        if (uiState.selectedTab == 2) {
+                            item(key = "pro_chart_smc") {
+                                ProCandleChart(candles = analysis.recentCandles)
+                            }
+
+                            analysis.smartMoney?.let { smc ->
+                                item(key = "smart_money_smc_page") {
+                                    SmartMoneySmcCard(
+                                        smc = smc,
+                                        currentPrice = analysis.currentPrice
+                                    )
+                                }
+                            }
+                        }
+
+                        // --- TAB 3: 🌍 MACRO & NEWS ---
+                        if (uiState.selectedTab == 3) {
+                            analysis.macroRadar?.let { radar ->
+                                item(key = "macro_news_radar_page") {
+                                    MacroNewsRadarCard(radar = radar)
+                                }
+                            }
+
+                            item(key = "market_sessions_page") {
+                                MarketSessionsCard(sessions = analysis.marketSessions)
+                            }
+                        }
+
+                        // --- TAB 4: ⚡ PRO TRICKS ---
+                        if (uiState.selectedTab == 4) {
+                            item(key = "trade_setup_tricks") {
+                                TradeSetupCard(
+                                    setup = analysis.tradeSetup,
+                                    onOpenCalculator = { slPips -> viewModel.openLotCalculator(slPips) }
+                                )
+                            }
+
+                            if (analysis.candleInsight != null && analysis.mtfMatrix != null) {
+                                item(key = "tricks_oracle") {
+                                    CandleMtfOracleCard(
+                                        candleInsight = analysis.candleInsight!!,
+                                        mtfMatrix = analysis.mtfMatrix!!,
+                                        tradingTricks = analysis.tradingTricks
+                                    )
+                                }
+                            }
+                        }
+
+                        // --- TAB 5: 📊 32 INDICATORS ---
+                        if (uiState.selectedTab == 5) {
+                            item(key = "hero_consensus_ind") {
+                                HeroConsensusCard(analysis = analysis)
+                            }
+
+                            item(key = "pivot_ladder_ind") {
+                                PivotLadderCard(
+                                    currentPrice = analysis.currentPrice,
+                                    pivotLevels = analysis.pivotLevels
+                                )
+                            }
+
+                            items(analysis.groups, key = { it.key }) { group ->
+                                IndicatorGroupCard(group = group)
+                            }
                         }
 
                         // Attribution & Disclaimer Footer

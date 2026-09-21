@@ -20,7 +20,103 @@ data class CandleBar(
     val ema21: Double? = null,
     val bbUpper: Double? = null,
     val bbLower: Double? = null,
+    val superTrend: Double? = null,
     val volume: Double? = null
+)
+
+@Serializable
+data class EconomicEvent(
+    val title: String,
+    val country: String = "USD",
+    val date: String,
+    val time: String,
+    val impact: String, // "High", "Medium", "Low", "Holiday"
+    val forecast: String = "",
+    val previous: String = "",
+    val goldImpact: String = "Volatile Reaction"
+)
+
+@Serializable
+data class MacroMarketIndex(
+    val symbol: String,
+    val name: String,
+    val value: Double,
+    val changePercent: Double,
+    val impactOnGold: Signal,
+    val explanation: String
+)
+
+@Serializable
+data class NewsSentimentItem(
+    val headline: String,
+    val source: String,
+    val timestamp: String,
+    val sentiment: Signal,
+    val impactTag: String,
+    val reason: String
+)
+
+@Serializable
+data class MacroSentimentRadar(
+    val overallBias: Signal,
+    val sentimentScorePercent: Int, // e.g. 75% Bullish Gold
+    val dxyIndex: MacroMarketIndex,
+    val us10yYield: MacroMarketIndex,
+    val upcomingEvents: List<EconomicEvent> = emptyList(),
+    val newsFeed: List<NewsSentimentItem> = emptyList(),
+    val summaryInsight: String
+)
+
+@Serializable
+data class SmartMoneyAnalysis(
+    val superTrendSignal: Signal,
+    val superTrendValue: Double,
+    val vwapValue: Double,
+    val vwapSignal: Signal,
+    val mfi14: Double,
+    val mfiSignal: Signal,
+    val fib0618: Double,
+    val fib0500: Double,
+    val marketStructure: String, // "BOS Bullish", "CHoCH Reversal", "Range Compression"
+    val liquiditySweepAlert: String
+)
+
+@Serializable
+data class AccountTierRisk(
+    val balanceLabel: String,
+    val safeLotSize: String,
+    val riskAmountDollars: String,
+    val rewardTp1Dollars: String,
+    val rewardTp2Dollars: String
+)
+
+@Serializable
+data class NextPredictionPlaybook(
+    val verdict: Signal,
+    val urgencyTag: String, // "STRONG CONVICTION", "ACCUMULATE ON DIP", "WAIT / NO TRADE"
+    val winProbabilityPercent: Int,
+    val actionHeading: String,
+    val tradeType: String = "INTRADAY SCALP / SWING", // "BUY SCALP (M15)", "SWING BUY (H1/H4)", "WAIT"
+    val orderExecutionType: String = "BUY LIMIT / PULLBACK", // "BUY LIMIT @ $X", "MARKET EXECUTION"
+    val recommendedEntryZone: String,
+    val stopLossLevel: String,
+    val stopLossPips: Double = 18.0,
+    val stopLossRationale: String = "Placed strictly below swing structure & SuperTrend trail to prevent stop hunts",
+    val takeProfit1: String,
+    val takeProfit2: String,
+    val takeProfit3: String = "",
+    val whereToEnterHindi: String = "",
+    val whereToAvoidHindi: String = "",
+    val whatToDoHindi: String,
+    val whatToDoEnglish: String,
+    val hindiAudioAdvice: String = "",
+    val executionRules: List<String> = emptyList(),
+    val accountTierMatrix: List<AccountTierRisk> = emptyList(),
+    val profitProjection001Lot: String,
+    val profitProjection010Lot: String,
+    val profitProjection100Lot: String,
+    val timeHorizon: String,
+    val riskManagementRule: String
 )
 
 @Serializable
@@ -75,6 +171,49 @@ data class MarketSession(
 )
 
 @Serializable
+data class CandleReadingInsight(
+    val lastCandleType: String, // e.g. "Bullish Hammer / Liquidity Wick"
+    val lastCandleMeaning: String, // "Strong buyer absorption at support"
+    val upperWickPressure: String, // "Low (No seller resistance)"
+    val lowerWickRejection: String, // "High ($4.80 liquidity absorption)"
+    val bodyMomentum: String, // "Bullish Expansion (74% body ratio)"
+    val nextCandleForecast: String, // "High probability of Green Bullish Expansion candle"
+    val nextCandleExpectedRange: String, // "$4,382.00 - $4,396.00"
+    val nextCandleTradeTactic: String, // "Buy the initial lower dip wick within first 2 minutes of the candle"
+    val confidencePercent: Int // 88%
+)
+
+@Serializable
+data class TimeframeStatus(
+    val timeframe: String, // "1M", "5M", "15M", "1H", "4H", "1D"
+    val label: String, // "Micro Scalp", "Fast Scalp", "Intraday Primary", "Hourly Trend", "Institutional Swing", "Daily Macro"
+    val signal: Signal, // BUY, SELL, WAIT
+    val keyLevel: String, // "$4,381.20 Support", "$4,395.00 Target"
+    val momentumPercent: Int, // 85%
+    val quickAction: String // "Scalp Long on dip", "Ride Bullish Expansion", "Hold"
+)
+
+@Serializable
+data class MultiTimeframeMatrix(
+    val timeframes: List<TimeframeStatus>,
+    val alignmentSummary: String, // "5 of 6 Timeframes BULLISH • MAXIMUM CONFLUENCE"
+    val scalpRecommendation: String, // "1M & 5M: Immediate Buy on Dip targeting +12 to +25 pips"
+    val swingRecommendation: String // "15M to 4H: Strong Bullish Hold targeting +60 to +140 pips"
+)
+
+@Serializable
+data class TradingTrick(
+    val id: String,
+    val name: String, // e.g. "Wick Trap & Liquidity Grab Trick", "Fair Value Gap (FVG) Magnet Trick"
+    val winRate: String, // "89% Win Rate"
+    val status: String, // "ACTIVE TRIGGER 🟢", "WATCHING 🟡", "READY"
+    val triggerCondition: String, // "Price wicked below S1 then instantly reclaimed above VWAP"
+    val howToTradeHindi: String, // "Jaise hi fake breakdown ke baad price wapas candle close upar kare, turant BUY karein!"
+    val howToTradeEnglish: String, // "Enter long immediately once candle closes back inside range after liquidity sweep."
+    val expectedPipGain: String // "+20 to +45 Pips"
+)
+
+@Serializable
 data class GoldAnalysisResult(
     val symbol: String = "XAU/USD",
     val currentPrice: Double,
@@ -90,12 +229,18 @@ data class GoldAnalysisResult(
     val buyCount: Int,
     val sellCount: Int,
     val waitCount: Int,
-    val totalGroups: Int = 5,
+    val totalGroups: Int = 7,
     val groups: List<GroupAnalysis>,
     val pivotLevels: PivotLevels,
     val tradeSetup: TradeSetup,
     val marketSessions: List<MarketSession> = emptyList(),
     val recentCandles: List<CandleBar> = emptyList(),
+    val nextPrediction: NextPredictionPlaybook? = null,
+    val macroRadar: MacroSentimentRadar? = null,
+    val smartMoney: SmartMoneyAnalysis? = null,
+    val candleInsight: CandleReadingInsight? = null,
+    val mtfMatrix: MultiTimeframeMatrix? = null,
+    val tradingTricks: List<TradingTrick> = emptyList(),
     val isSimulatedFallback: Boolean = false
 )
 
