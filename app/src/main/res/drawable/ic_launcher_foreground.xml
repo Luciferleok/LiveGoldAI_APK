@@ -3,6 +3,6 @@
     <item
         android:width="66dp"
         android:height="66dp"
-        android:drawable="@drawable/img_royal_gold_emblem"
+        android:drawable="@drawable/ic_luxury_gold_logo"
         android:gravity="center" />
 </layer-list>

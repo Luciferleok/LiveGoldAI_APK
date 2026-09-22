@@ -1,11 +1,14 @@
 package com.example.livegoldai.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Diamond
 import androidx.compose.material.icons.filled.Key
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -24,6 +27,8 @@ import com.example.livegoldai.theme.*
 fun SettingsDialog(
     currentApiKey: String,
     onSaveKey: (String) -> Unit,
+    onOpenLogoGallery: () -> Unit = {},
+    onOpenThemeSelector: () -> Unit = {},
     onDismiss: () -> Unit
 ) {
     var keyText by remember { mutableStateOf(currentApiKey) }
@@ -147,7 +152,63 @@ fun SettingsDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(16.dp))
+
+                OutlinedButton(
+                    onClick = {
+                        onDismiss()
+                        onOpenThemeSelector()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("change_theme_button"),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, GoldPrimary)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Palette,
+                        contentDescription = null,
+                        tint = GoldLight,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Customize Theme & View Mode",
+                        color = GoldLight,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                OutlinedButton(
+                    onClick = {
+                        onDismiss()
+                        onOpenLogoGallery()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("change_emblem_button"),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, ObsidianBorderHighlight)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Diamond,
+                        contentDescription = null,
+                        tint = TextSecondary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Customize VIP Brand Emblem",
+                        color = TextSecondary,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),

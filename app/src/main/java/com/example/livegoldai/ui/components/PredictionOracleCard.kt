@@ -38,6 +38,8 @@ import com.example.livegoldai.theme.*
 fun PredictionOracleCard(
     prediction: NextPredictionPlaybook,
     onOpenCalculator: () -> Unit = {},
+    logoRes: Int = R.drawable.ic_luxury_gold_logo,
+    onLogoClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -98,12 +100,13 @@ fun PredictionOracleCard(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Image(
-                        painter = painterResource(id = R.drawable.img_royal_gold_emblem),
+                        painter = painterResource(id = logoRes),
                         contentDescription = "Kalankar Royal Gold Emblem",
                         modifier = Modifier
                             .size(38.dp)
                             .clip(RoundedCornerShape(10.dp))
-                            .border(1.5.dp, GoldLight, RoundedCornerShape(10.dp)),
+                            .border(1.5.dp, GoldLight, RoundedCornerShape(10.dp))
+                            .clickable { onLogoClick() },
                         contentScale = ContentScale.Crop
                     )
                     Spacer(modifier = Modifier.width(10.dp))

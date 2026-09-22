@@ -5,6 +5,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import com.example.livegoldai.theme.LiveGoldAITheme
 import com.example.livegoldai.ui.GoldHomeScreen
 import com.example.livegoldai.ui.GoldViewModel
@@ -17,7 +19,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            LiveGoldAITheme {
+            val uiState by viewModel.uiState.collectAsState()
+            LiveGoldAITheme(themeMode = uiState.themeMode) {
                 GoldHomeScreen(viewModel = viewModel)
             }
         }
