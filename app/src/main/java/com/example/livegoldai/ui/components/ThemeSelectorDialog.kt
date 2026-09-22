@@ -34,6 +34,7 @@ fun ThemeSelectorDialog(
     onDismiss: () -> Unit
 ) {
     var tempTheme by remember { mutableStateOf(currentTheme) }
+    val appColors = LocalAppColors.current
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -42,10 +43,10 @@ fun ThemeSelectorDialog(
                 .padding(horizontal = 4.dp)
                 .testTag("theme_selector_dialog"),
             shape = RoundedCornerShape(24.dp),
-            color = ObsidianSurfaceCard,
+            color = appColors.surfaceCard,
             border = CardDefaults.outlinedCardBorder().copy(
                 brush = Brush.linearGradient(
-                    listOf(GoldPrimary, ObsidianBorderHighlight, GoldDark)
+                    listOf(appColors.lightGold, appColors.primaryGold, appColors.borderHighlight)
                 )
             )
         ) {
@@ -215,7 +216,10 @@ fun ThemeSelectorDialog(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(14.dp))
-                                .clickable { tempTheme = mode }
+                                .clickable {
+                                    tempTheme = mode
+                                    onSelectTheme(mode)
+                                }
                                 .testTag("theme_option_${mode.name}"),
                             color = if (isChosen) ObsidianSurfaceElevated else ObsidianBackground,
                             border = CardDefaults.outlinedCardBorder().copy(
@@ -323,13 +327,16 @@ fun ThemeSelectorDialog(
 
                 // Apply Button
                 Button(
-                    onClick = { onSelectTheme(tempTheme) },
+                    onClick = {
+                        onSelectTheme(tempTheme)
+                        onDismiss()
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp)
                         .testTag("apply_theme_button"),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = GoldPrimary,
+                        containerColor = appColors.primaryGold,
                         contentColor = Color.Black
                     ),
                     shape = RoundedCornerShape(14.dp)

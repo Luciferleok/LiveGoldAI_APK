@@ -13,11 +13,23 @@ enum class ThemeMode(
     val badge: String,
     val icon: String
 ) {
+    DUBAI_ROYALE(
+        title = "Dubai Royale 24K Bullion",
+        subtitle = "Prestige Dubai Gold Souk bullion metallic finish with diamond velvet",
+        badge = "✨ 24K PURE GOLD",
+        icon = "✨"
+    ),
     ROYAL_OBSIDIAN(
         title = "Royal Obsidian Gold",
         subtitle = "Pitch black OLED contrast with 24K bullion gold accents",
         badge = "👑 SIGNATURE LUXURY",
         icon = "👑"
+    ),
+    MONACO_ROSE(
+        title = "Monaco Rose Gold Sovereign",
+        subtitle = "Ultra-luxury French Riviera rose gold bullion with satin caviar black",
+        badge = "🌹 ROSE GOLD BULLION",
+        icon = "🌹"
     ),
     CYBER_NEON(
         title = "Cyber Tokyo Matrix",
@@ -59,40 +71,93 @@ data class AppThemeColors(
     val signalSellBg: Color,
     val signalWait: Color,
     val signalWaitBg: Color
-)
+) {
+    val goldGradient: androidx.compose.ui.graphics.Brush
+        get() = androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(lightGold, primaryGold))
+
+    val cardGradient: androidx.compose.ui.graphics.Brush
+        get() = androidx.compose.ui.graphics.Brush.verticalGradient(listOf(surfaceElevated, surfaceCard))
+
+    val borderGlow: androidx.compose.ui.graphics.Brush
+        get() = androidx.compose.ui.graphics.Brush.linearGradient(listOf(borderHighlight, border))
+}
 
 val RoyalObsidianPalette = AppThemeColors(
     themeMode = ThemeMode.ROYAL_OBSIDIAN,
-    background = Color(0xFF0A0D14),
-    surface = Color(0xFF131822),
-    surfaceElevated = Color(0xFF1B2230),
-    surfaceCard = Color(0xFF161C27),
-    border = Color(0xFF262E3F),
-    borderHighlight = Color(0xFF3B4861),
-    primaryGold = Color(0xFFF5B800),
-    lightGold = Color(0xFFFFD54F),
-    darkGold = Color(0xFFC49300),
-    textPrimary = Color(0xFFF1F5F9),
+    background = Color(0xFF07090E),
+    surface = Color(0xFF0F141F),
+    surfaceElevated = Color(0xFF171E2D),
+    surfaceCard = Color(0xFF121824),
+    border = Color(0xFF242E40),
+    borderHighlight = Color(0xFFFFC72C),
+    primaryGold = Color(0xFFFFC72C),
+    lightGold = Color(0xFFFFE082),
+    darkGold = Color(0xFFD4AF37),
+    textPrimary = Color(0xFFF8FAFC),
     textSecondary = Color(0xFF94A3B8),
     textMuted = Color(0xFF64748B),
     signalBuy = Color(0xFF00E676),
-    signalBuyBg = Color(0xFF0A331E),
-    signalSell = Color(0xFFFF3B30),
-    signalSellBg = Color(0xFF381214),
+    signalBuyBg = Color(0xFF072B19),
+    signalSell = Color(0xFFFF334B),
+    signalSellBg = Color(0xFF330B12),
+    signalWait = Color(0xFFFFB800),
+    signalWaitBg = Color(0xFF332408)
+)
+
+val DubaiRoyalePalette = AppThemeColors(
+    themeMode = ThemeMode.DUBAI_ROYALE,
+    background = Color(0xFF050608),
+    surface = Color(0xFF0D1016),
+    surfaceElevated = Color(0xFF171B24),
+    surfaceCard = Color(0xFF12151D),
+    border = Color(0xFF382F1D),
+    borderHighlight = Color(0xFFFFD700),
+    primaryGold = Color(0xFFFFD700), // Pure 24K Gold
+    lightGold = Color(0xFFFFF0A6),
+    darkGold = Color(0xFFE5A700),
+    textPrimary = Color(0xFFFFFFFF),
+    textSecondary = Color(0xFFE0D5BE),
+    textMuted = Color(0xFF998E78),
+    signalBuy = Color(0xFF00FF88),
+    signalBuyBg = Color(0xFF052B19),
+    signalSell = Color(0xFFFF264D),
+    signalSellBg = Color(0xFF380710),
+    signalWait = Color(0xFFFFD700),
+    signalWaitBg = Color(0xFF302408)
+)
+
+val MonacoRosePalette = AppThemeColors(
+    themeMode = ThemeMode.MONACO_ROSE,
+    background = Color(0xFF080507),
+    surface = Color(0xFF130C10),
+    surfaceElevated = Color(0xFF1C1318),
+    surfaceCard = Color(0xFF170F14),
+    border = Color(0xFF361E26),
+    borderHighlight = Color(0xFFFF94A6),
+    primaryGold = Color(0xFFFF8599), // Monaco Rose Gold
+    lightGold = Color(0xFFFFB8C6),
+    darkGold = Color(0xFFC7556A),
+    textPrimary = Color(0xFFFFF6F8),
+    textSecondary = Color(0xFFDFB0BC),
+    textMuted = Color(0xFF966F7B),
+    signalBuy = Color(0xFF00FFAB),
+    signalBuyBg = Color(0xFF052B1E),
+    signalSell = Color(0xFFFF2E67),
+    signalSellBg = Color(0xFF3B0917),
     signalWait = Color(0xFFFFB300),
-    signalWaitBg = Color(0xFF33270A)
+    signalWaitBg = Color(0xFF332308)
 )
 
 val CyberNeonPalette = AppThemeColors(
     themeMode = ThemeMode.CYBER_NEON,
-    background = Color(0xFF050B14),
-    surface = Color(0xFF0B1728),
-    surfaceElevated = Color(0xFF10223A),
-    surfaceCard = Color(0xFF0D1D33),
-    border = Color(0xFF1B3A5E),
-    borderHighlight = Color(0xFF00E5FF),
-    primaryGold = Color(0xFF00E5FF), // Electric Cyan
-    lightGold = Color(0xFF80F3FF),
+    background = Color(0xFF030710),
+    surface = Color(0xFF081324),
+    surfaceElevated = Color(0xFF0E1F38),
+    surfaceCard = Color(0xFF0A182C),
+    border = Color(0xFF16365C),
+    borderHighlight = Color(0xFF00F0FF),
+    primaryGold = Color(0xFF00F0FF), // Electric Cyan
+    lightGold = Color(0xFF80F7FF),
     darkGold = Color(0xFF009AB0),
     textPrimary = Color(0xFFF0FDF4),
     textSecondary = Color(0xFF93C5FD),
@@ -107,14 +172,14 @@ val CyberNeonPalette = AppThemeColors(
 
 val SwissBankPalette = AppThemeColors(
     themeMode = ThemeMode.SWISS_BANK,
-    background = Color(0xFF0B111E),
-    surface = Color(0xFF131D31),
-    surfaceElevated = Color(0xFF1B2844),
-    surfaceCard = Color(0xFF152238),
-    border = Color(0xFF2B3C5E),
-    borderHighlight = Color(0xFFD4AF37),
+    background = Color(0xFF060B14),
+    surface = Color(0xFF0E182A),
+    surfaceElevated = Color(0xFF15233C),
+    surfaceCard = Color(0xFF111D32),
+    border = Color(0xFF243657),
+    borderHighlight = Color(0xFFE5C07B),
     primaryGold = Color(0xFFE5C07B), // Champagne Bullion
-    lightGold = Color(0xFFF4DEAB),
+    lightGold = Color(0xFFF6E3B8),
     darkGold = Color(0xFFB58B35),
     textPrimary = Color(0xFFF8FAFC),
     textSecondary = Color(0xFFA5B4CB),
@@ -129,11 +194,11 @@ val SwissBankPalette = AppThemeColors(
 
 val EmeraldAlphaPalette = AppThemeColors(
     themeMode = ThemeMode.EMERALD_ALPHA,
-    background = Color(0xFF06130E),
-    surface = Color(0xFF0C2018),
-    surfaceElevated = Color(0xFF122C22),
-    surfaceCard = Color(0xFF0E251C),
-    border = Color(0xFF1F4A38),
+    background = Color(0xFF030E09),
+    surface = Color(0xFF081B13),
+    surfaceElevated = Color(0xFF0F261C),
+    surfaceCard = Color(0xFF0B2117),
+    border = Color(0xFF184230),
     borderHighlight = Color(0xFF10B981),
     primaryGold = Color(0xFF10B981), // Emerald Alpha
     lightGold = Color(0xFF6EE7B7),
@@ -151,7 +216,9 @@ val EmeraldAlphaPalette = AppThemeColors(
 
 fun getPaletteForMode(mode: ThemeMode): AppThemeColors {
     return when (mode) {
+        ThemeMode.DUBAI_ROYALE -> DubaiRoyalePalette
         ThemeMode.ROYAL_OBSIDIAN -> RoyalObsidianPalette
+        ThemeMode.MONACO_ROSE -> MonacoRosePalette
         ThemeMode.CYBER_NEON -> CyberNeonPalette
         ThemeMode.SWISS_BANK -> SwissBankPalette
         ThemeMode.EMERALD_ALPHA -> EmeraldAlphaPalette

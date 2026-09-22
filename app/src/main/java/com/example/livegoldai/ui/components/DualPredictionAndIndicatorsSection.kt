@@ -1,5 +1,9 @@
 package com.example.livegoldai.ui.components
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
@@ -17,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -446,7 +451,7 @@ fun PredictionBigCard(
 
                     Divider(color = ObsidianBorder, thickness = 0.8.dp)
 
-                    // Target, SL & Entry Levels Grid
+                    // Target, SL & Entry Levels Grid (With TP1 Safe & TP2 Runner Pips)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
@@ -455,7 +460,7 @@ fun PredictionBigCard(
                             Text(text = "ENTRY ZONE", fontSize = 9.sp, color = TextMuted, fontWeight = FontWeight.Bold)
                             Text(
                                 text = "$${String.format(Locale.US, "%.2f", analysis.tradeSetup.entryPrice)}",
-                                fontSize = 13.sp,
+                                fontSize = 12.sp,
                                 fontWeight = FontWeight.Black,
                                 color = TextPrimary
                             )
@@ -465,29 +470,77 @@ fun PredictionBigCard(
                             Text(text = "STOP LOSS (SL)", fontSize = 9.sp, color = TextMuted, fontWeight = FontWeight.Bold)
                             Text(
                                 text = "$${String.format(Locale.US, "%.2f", analysis.tradeSetup.stopLoss)}",
-                                fontSize = 13.sp,
+                                fontSize = 12.sp,
                                 fontWeight = FontWeight.Black,
+                                color = SignalSell
+                            )
+                            Text(
+                                text = "-${analysis.tradeSetup.stopLossPips.toInt()} Pips",
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold,
                                 color = SignalSell
                             )
                         }
 
                         Column {
-                            Text(text = "TARGET (TP1)", fontSize = 9.sp, color = TextMuted, fontWeight = FontWeight.Bold)
+                            Text(text = "TARGET 1 (SAFE)", fontSize = 9.sp, color = TextMuted, fontWeight = FontWeight.Bold)
                             Text(
                                 text = "$${String.format(Locale.US, "%.2f", analysis.tradeSetup.takeProfit1)}",
-                                fontSize = 13.sp,
+                                fontSize = 12.sp,
                                 fontWeight = FontWeight.Black,
+                                color = SignalBuy
+                            )
+                            Text(
+                                text = "+${analysis.tradeSetup.takeProfit1Pips.toInt()} Pips",
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold,
                                 color = SignalBuy
                             )
                         }
 
                         Column {
-                            Text(text = "R:R RATIO", fontSize = 9.sp, color = TextMuted, fontWeight = FontWeight.Bold)
+                            Text(text = "TARGET 2 (RUNNER)", fontSize = 9.sp, color = TextMuted, fontWeight = FontWeight.Bold)
                             Text(
-                                text = analysis.tradeSetup.riskRewardRatio,
-                                fontSize = 13.sp,
+                                text = "$${String.format(Locale.US, "%.2f", analysis.tradeSetup.takeProfit2)}",
+                                fontSize = 12.sp,
                                 fontWeight = FontWeight.Black,
                                 color = GoldLight
+                            )
+                            Text(
+                                text = "+${analysis.tradeSetup.takeProfit2Pips.toInt()} Pips",
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = GoldLight
+                            )
+                        }
+                    }
+
+                    // Trailing SL & Free Trade Playbook
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = GoldContainer.copy(alpha = 0.5f),
+                        border = BorderStroke(0.8.dp, GoldPrimary.copy(alpha = 0.4f)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.LockReset,
+                                contentDescription = null,
+                                tint = GoldLight,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "💡 Trailing Rule: Jab price TP1 ($${String.format(Locale.US, "%.2f", analysis.tradeSetup.takeProfit1)}) hit kare, Stop Loss ko Entry price par move karein — trade 100% Risk-Free ho jayega!",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontSize = 10.sp,
+                                color = TextPrimary,
+                                lineHeight = 14.sp
                             )
                         }
                     }
@@ -513,7 +566,7 @@ fun PredictionBigCard(
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "Prediction Cancel Rule: Agar candle $${String.format(Locale.US, "%.2f", analysis.tradeSetup.stopLoss)} ke paar close ho jaye to trade cancel hoga.",
+                                text = "Prediction Cancel Rule: Agar candle $${String.format(Locale.US, "%.2f", analysis.tradeSetup.stopLoss)} ke paar close ho jaye to trade cancel samjhein.",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontSize = 10.sp,
                                 color = TextSecondary,
@@ -522,25 +575,58 @@ fun PredictionBigCard(
                         }
                     }
 
-                    // 1-Tap Lot Calculator Button
-                    Button(
-                        onClick = { onOpenCalculator(analysis.tradeSetup.stopLossPips) },
-                        shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = GoldPrimary,
-                            contentColor = Color.Black
-                        ),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("prediction_lot_calculator_btn")
+                    // Action Buttons Row: [ Safe Lot Calculator ] & [ Copy Setup ]
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Icon(imageVector = Icons.Default.Calculate, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Calculate Safe Lot Size (SL: ${analysis.tradeSetup.stopLossPips.toInt()} Pips)",
-                            fontWeight = FontWeight.Black,
-                            fontSize = 11.sp
-                        )
+                        Button(
+                            onClick = { onOpenCalculator(analysis.tradeSetup.stopLossPips) },
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = GoldPrimary,
+                                contentColor = Color.Black
+                            ),
+                            modifier = Modifier
+                                .weight(1f)
+                                .testTag("prediction_lot_calculator_btn")
+                        ) {
+                            Icon(imageVector = Icons.Default.Calculate, contentDescription = null, modifier = Modifier.size(15.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Lot Size Calculator",
+                                fontWeight = FontWeight.Black,
+                                fontSize = 11.sp
+                            )
+                        }
+
+                        val context = LocalContext.current
+                        OutlinedButton(
+                            onClick = {
+                                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+                                val clip = ClipData.newPlainText(
+                                    "Kalankar FX Gold Signal",
+                                    "🏆 KALANKAR FX GOLD SIGNAL:\n" +
+                                            "Direction: ${verdict.name}\n" +
+                                            "Entry: $${String.format(Locale.US, "%.2f", analysis.tradeSetup.entryPrice)}\n" +
+                                            "Stop Loss: $${String.format(Locale.US, "%.2f", analysis.tradeSetup.stopLoss)} (-${analysis.tradeSetup.stopLossPips.toInt()} Pips)\n" +
+                                            "Target 1: $${String.format(Locale.US, "%.2f", analysis.tradeSetup.takeProfit1)} (+${analysis.tradeSetup.takeProfit1Pips.toInt()} Pips)\n" +
+                                            "Target 2: $${String.format(Locale.US, "%.2f", analysis.tradeSetup.takeProfit2)} (+${analysis.tradeSetup.takeProfit2Pips.toInt()} Pips)\n" +
+                                            "Win Probability: $winProb%\n" +
+                                            "R:R Ratio: ${analysis.tradeSetup.riskRewardRatio}"
+                                )
+                                clipboard?.setPrimaryClip(clip)
+                                Toast.makeText(context, "✅ Trade Setup Copied to Clipboard!", Toast.LENGTH_SHORT).show()
+                            },
+                            shape = RoundedCornerShape(10.dp),
+                            border = BorderStroke(1.dp, GoldPrimary.copy(alpha = 0.7f)),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = GoldLight),
+                            modifier = Modifier.testTag("copy_prediction_signal_btn")
+                        ) {
+                            Icon(imageVector = Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(15.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(text = "Copy", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
             }

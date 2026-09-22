@@ -47,6 +47,7 @@ fun GoldHomeScreen(
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val appColors = LocalAppColors.current
     var showSettings by remember { mutableStateOf(false) }
 
     if (showSettings) {
@@ -105,8 +106,8 @@ fun GoldHomeScreen(
     Scaffold(
         modifier = modifier
             .fillMaxSize()
-            .background(ObsidianBackground),
-        containerColor = ObsidianBackground,
+            .background(appColors.background),
+        containerColor = appColors.background,
         topBar = {
             TopAppBar(
                 title = {
@@ -121,9 +122,13 @@ fun GoldHomeScreen(
                                 painter = painterResource(id = uiState.selectedLogoRes),
                                 contentDescription = "Kalankar FX Gold Royal Logo - Tap to customize emblem",
                                 modifier = Modifier
-                                    .size(42.dp)
+                                    .size(44.dp)
                                     .clip(RoundedCornerShape(12.dp))
-                                    .border(1.5.dp, GoldPrimary, RoundedCornerShape(12.dp)),
+                                    .border(
+                                        1.5.dp,
+                                        Brush.linearGradient(listOf(appColors.lightGold, appColors.primaryGold)),
+                                        RoundedCornerShape(12.dp)
+                                    ),
                                 contentScale = ContentScale.Crop
                             )
                         }
@@ -136,7 +141,7 @@ fun GoldHomeScreen(
                                     text = "KALANKAR FX GOLD PRO",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Black,
-                                    color = TextPrimary,
+                                    color = appColors.textPrimary,
                                     letterSpacing = 0.5.sp,
                                     fontSize = 15.sp
                                 )
@@ -145,13 +150,13 @@ fun GoldHomeScreen(
                                     modifier = Modifier
                                         .size(7.dp)
                                         .clip(CircleShape)
-                                        .background(SignalBuy)
+                                        .background(appColors.signalBuy)
                                 )
                             }
                             Text(
                                 text = "VIP BULLION TERMINAL • By Rudvay Ujjwal Kalankar",
                                 style = MaterialTheme.typography.bodyMedium.copy(fontSize = 10.sp),
-                                color = TextGold,
+                                color = appColors.primaryGold,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
@@ -168,7 +173,7 @@ fun GoldHomeScreen(
                         Icon(
                             imageVector = Icons.Default.Calculate,
                             contentDescription = "Lot Calculator",
-                            tint = GoldLight
+                            tint = appColors.lightGold
                         )
                     }
 
@@ -179,14 +184,14 @@ fun GoldHomeScreen(
                         BadgedBox(
                             badge = {
                                 if (uiState.priceAlertTarget != null) {
-                                    Badge(containerColor = if (uiState.isAlertTriggered) SignalSell else GoldPrimary)
+                                    Badge(containerColor = if (uiState.isAlertTriggered) appColors.signalSell else appColors.primaryGold)
                                 }
                             }
                         ) {
                             Icon(
                                 imageVector = Icons.Default.NotificationsActive,
                                 contentDescription = "Price Alert",
-                                tint = if (uiState.priceAlertTarget != null) GoldPrimary else TextSecondary
+                                tint = if (uiState.priceAlertTarget != null) appColors.primaryGold else appColors.textSecondary
                             )
                         }
                     }
@@ -197,20 +202,40 @@ fun GoldHomeScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Default.AutoAwesome,
-                            contentDescription = "Kya Hoga Prediction & Probability",
-                            tint = GoldLight
+                            contentDescription = "Forecast",
+                            tint = appColors.lightGold
                         )
                     }
 
-                    IconButton(
-                        onClick = { viewModel.openThemeSelector() },
-                        modifier = Modifier.testTag("top_theme_button")
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = appColors.primaryGold.copy(alpha = 0.15f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, appColors.primaryGold.copy(alpha = 0.6f)),
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .clickable { viewModel.openThemeSelector() }
+                            .testTag("top_theme_button")
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Palette,
-                            contentDescription = "Theme & View Mode",
-                            tint = GoldPrimary
-                        )
+                        Row(
+                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 5.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(text = uiState.themeMode.icon, fontSize = 12.sp)
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text(
+                                text = when (uiState.themeMode) {
+                                    ThemeMode.DUBAI_ROYALE -> "DUBAI 24K"
+                                    ThemeMode.ROYAL_OBSIDIAN -> "24K GOLD"
+                                    ThemeMode.MONACO_ROSE -> "ROSE GOLD"
+                                    ThemeMode.CYBER_NEON -> "CYBER"
+                                    ThemeMode.SWISS_BANK -> "SWISS"
+                                    ThemeMode.EMERALD_ALPHA -> "EMERALD"
+                                },
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Black,
+                                color = appColors.primaryGold
+                            )
+                        }
                     }
 
                     IconButton(
@@ -220,7 +245,7 @@ fun GoldHomeScreen(
                         Icon(
                             imageVector = Icons.Default.Refresh,
                             contentDescription = "Refresh Data",
-                            tint = TextPrimary
+                            tint = appColors.textPrimary
                         )
                     }
 
@@ -231,14 +256,14 @@ fun GoldHomeScreen(
                         Icon(
                             imageVector = Icons.Default.Settings,
                             contentDescription = "Settings",
-                            tint = TextSecondary
+                            tint = appColors.textSecondary
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = ObsidianBackground,
-                    titleContentColor = TextPrimary,
-                    actionIconContentColor = TextPrimary
+                    containerColor = appColors.background,
+                    titleContentColor = appColors.textPrimary,
+                    actionIconContentColor = appColors.textPrimary
                 )
             )
         }
@@ -269,12 +294,11 @@ fun GoldHomeScreen(
                 uiState.data != null -> {
                     val analysis = uiState.data!!
                     val tabs = listOf(
-                        "🎯 VIP COCKPIT",
                         "🕯️ CANDLE & MTF",
-                        "📈 CHART & SMC",
+                        "🏦 SMART MONEY SMC",
                         "🌍 MACRO & NEWS",
-                        "⚡ PRO TRICKS",
-                        "📊 32 INDICATORS"
+                        "🎯 PIVOT LADDER",
+                        "⚡ PRO TRICKS"
                     )
 
                     LazyColumn(
@@ -373,224 +397,129 @@ fun GoldHomeScreen(
                             MarketSessionsCard(sessions = analysis.marketSessions)
                         }
 
-                        // Executive 1-Glance Snapshot HUD (Direction, Entry, Seal SL, Target TP1)
-                        item(key = "executive_hud") {
-                                ExecutiveSummaryBar(
-                                    analysis = analysis,
-                                    onTabSelect = { tabIndex -> viewModel.setTab(tabIndex) }
+                        // Section Header for Deep-Dive Intelligence
+                        item(key = "deep_dive_header") {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.AutoAwesome,
+                                        contentDescription = null,
+                                        tint = GoldLight,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "DEEP-DIVE MARKET INTELLIGENCE",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Black,
+                                        color = GoldLight,
+                                        letterSpacing = 0.5.sp
+                                    )
+                                }
+                                Text(
+                                    text = "5 Pro Modules",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = TextMuted,
+                                    fontSize = 10.sp
                                 )
                             }
+                        }
 
-                            // Category Filter Tabs (Smooth, Intuitive Navigation)
-                            item(key = "category_tabs") {
-                                ScrollableTabRow(
-                                    selectedTabIndex = uiState.selectedTab,
-                                    edgePadding = 0.dp,
-                                    containerColor = Color.Transparent,
-                                    contentColor = GoldPrimary,
-                                    indicator = {},
-                                    divider = {}
-                                ) {
-                                    tabs.forEachIndexed { index, title ->
-                                        val isSelected = uiState.selectedTab == index
-                                        Surface(
-                                            shape = RoundedCornerShape(12.dp),
-                                            color = if (isSelected) GoldPrimary else ObsidianSurfaceElevated,
-                                            border = if (isSelected) null else CardDefaults.outlinedCardBorder().copy(
-                                                brush = Brush.linearGradient(listOf(ObsidianBorderHighlight, ObsidianBorder))
-                                            ),
-                                            modifier = Modifier
-                                                .padding(end = 8.dp)
-                                                .clip(RoundedCornerShape(12.dp))
-                                                .clickable { viewModel.setTab(index) }
-                                                .testTag("tab_$title")
-                                        ) {
-                                            Text(
-                                                text = title,
-                                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                                                style = MaterialTheme.typography.labelMedium,
-                                                fontWeight = if (isSelected) FontWeight.Black else FontWeight.SemiBold,
-                                                color = if (isSelected) ObsidianBackground else TextSecondary
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-
-                            // Easy 1-Glance View Active Indicator Pill
-                            if (uiState.isCompactEasyView) {
-                                item(key = "easy_mode_active_pill") {
+                        // Category Filter Tabs (Smooth, Intuitive Navigation)
+                        item(key = "category_tabs") {
+                            ScrollableTabRow(
+                                selectedTabIndex = uiState.selectedTab.coerceIn(0, tabs.size - 1),
+                                edgePadding = 0.dp,
+                                containerColor = Color.Transparent,
+                                contentColor = GoldPrimary,
+                                indicator = {},
+                                divider = {}
+                            ) {
+                                tabs.forEachIndexed { index, title ->
+                                    val isSelected = uiState.selectedTab == index
                                     Surface(
                                         shape = RoundedCornerShape(12.dp),
-                                        color = GoldContainer,
-                                        border = CardDefaults.outlinedCardBorder().copy(
-                                            brush = Brush.horizontalGradient(listOf(GoldPrimary, GoldLight))
+                                        color = if (isSelected) GoldPrimary else ObsidianSurfaceElevated,
+                                        border = if (isSelected) null else CardDefaults.outlinedCardBorder().copy(
+                                            brush = Brush.linearGradient(listOf(ObsidianBorderHighlight, ObsidianBorder))
                                         ),
-                                        modifier = Modifier.fillMaxWidth()
+                                        modifier = Modifier
+                                            .padding(end = 8.dp)
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .clickable { viewModel.setTab(index) }
+                                            .testTag("tab_$title")
                                     ) {
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(horizontal = 14.dp, vertical = 10.dp),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Speed,
-                                                    contentDescription = null,
-                                                    tint = GoldLight,
-                                                    modifier = Modifier.size(18.dp)
-                                                )
-                                                Spacer(modifier = Modifier.width(8.dp))
-                                                Text(
-                                                    text = "⚡ EASY 1-GLANCE VIEW MODE ACTIVE",
-                                                    style = MaterialTheme.typography.labelSmall,
-                                                    fontWeight = FontWeight.Black,
-                                                    color = GoldLight,
-                                                    letterSpacing = 0.5.sp
-                                                )
-                                            }
-                                            TextButton(
-                                                onClick = { viewModel.toggleCompactEasyView() },
-                                                contentPadding = PaddingValues(0.dp)
-                                            ) {
-                                                Text(
-                                                    text = "Show Full Pro Terminal",
-                                                    color = TextPrimary,
-                                                    fontSize = 11.sp,
-                                                    fontWeight = FontWeight.Bold
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            // --- TAB 0: 🎯 VIP COCKPIT ---
-                            if (uiState.selectedTab == 0) {
-                                analysis.nextPrediction?.let { prediction ->
-                                    item(key = "prediction_oracle") {
-                                        PredictionOracleCard(
-                                            prediction = prediction,
-                                            onOpenCalculator = {
-                                                val slPips = analysis.tradeSetup.stopLossPips
-                                                viewModel.openLotCalculator(slPips)
-                                            },
-                                            logoRes = uiState.selectedLogoRes,
-                                            onLogoClick = { viewModel.openLogoSelector() }
-                                        )
-                                    }
-                                }
-
-                                if (!uiState.isCompactEasyView) {
-                                    item(key = "pro_chart_cockpit") {
-                                        ProCandleChart(candles = analysis.recentCandles)
-                                    }
-
-                                    if (analysis.candleInsight != null && analysis.mtfMatrix != null) {
-                                        item(key = "candle_mtf_cockpit") {
-                                            CandleMtfOracleCard(
-                                                candleInsight = analysis.candleInsight!!,
-                                                mtfMatrix = analysis.mtfMatrix!!,
-                                                tradingTricks = analysis.tradingTricks
-                                            )
-                                        }
-                                    }
-                                } else {
-                                    // In Easy Mode: Show direct Trade Setup Card immediately below prediction for instant execution
-                                    item(key = "easy_trade_setup") {
-                                        TradeSetupCard(
-                                            setup = analysis.tradeSetup,
-                                            onOpenCalculator = { slPips -> viewModel.openLotCalculator(slPips) }
+                                        Text(
+                                            text = title,
+                                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = if (isSelected) FontWeight.Black else FontWeight.SemiBold,
+                                            color = if (isSelected) ObsidianBackground else TextSecondary
                                         )
                                     }
                                 }
                             }
+                        }
 
-                            // --- TAB 1: 🕯️ CANDLE & MTF ---
-                            if (uiState.selectedTab == 1) {
-                                if (analysis.candleInsight != null && analysis.mtfMatrix != null) {
-                                    item(key = "candle_mtf_page") {
-                                        CandleMtfOracleCard(
-                                            candleInsight = analysis.candleInsight!!,
-                                            mtfMatrix = analysis.mtfMatrix!!,
-                                            tradingTricks = analysis.tradingTricks
-                                        )
-                                    }
-                                }
-
-                                item(key = "pro_chart_candle") {
-                                    ProCandleChart(candles = analysis.recentCandles)
-                                }
-                            }
-
-                            // --- TAB 2: 📈 CHART & SMC ---
-                            if (uiState.selectedTab == 2) {
-                                item(key = "pro_chart_smc") {
-                                    ProCandleChart(candles = analysis.recentCandles)
-                                }
-
-                                analysis.smartMoney?.let { smc ->
-                                    item(key = "smart_money_smc_page") {
-                                        SmartMoneySmcCard(
-                                            smc = smc,
-                                            currentPrice = analysis.currentPrice
-                                        )
-                                    }
-                                }
-                            }
-
-                            // --- TAB 3: 🌍 MACRO & NEWS ---
-                            if (uiState.selectedTab == 3) {
-                                analysis.macroRadar?.let { radar ->
-                                    item(key = "macro_news_radar_page") {
-                                        MacroNewsRadarCard(radar = radar)
-                                    }
-                                }
-
-                                item(key = "market_sessions_page") {
-                                    MarketSessionsCard(sessions = analysis.marketSessions)
-                                }
-                            }
-
-                            // --- TAB 4: ⚡ PRO TRICKS ---
-                            if (uiState.selectedTab == 4) {
-                                item(key = "trade_setup_tricks") {
-                                    TradeSetupCard(
-                                        setup = analysis.tradeSetup,
-                                        onOpenCalculator = { slPips -> viewModel.openLotCalculator(slPips) }
+                        // --- TAB 0: 🕯️ CANDLE & MTF MATRIX ---
+                        if (uiState.selectedTab == 0) {
+                            if (analysis.candleInsight != null && analysis.mtfMatrix != null) {
+                                item(key = "candle_mtf_page") {
+                                    CandleMtfOracleCard(
+                                        candleInsight = analysis.candleInsight!!,
+                                        mtfMatrix = analysis.mtfMatrix!!,
+                                        tradingTricks = analysis.tradingTricks
                                     )
                                 }
-
-                                if (analysis.candleInsight != null && analysis.mtfMatrix != null) {
-                                    item(key = "tricks_oracle") {
-                                        CandleMtfOracleCard(
-                                            candleInsight = analysis.candleInsight!!,
-                                            mtfMatrix = analysis.mtfMatrix!!,
-                                            tradingTricks = analysis.tradingTricks
-                                        )
-                                    }
-                                }
                             }
+                        }
 
-                            // --- TAB 5: 📊 32 INDICATORS ---
-                            if (uiState.selectedTab == 5) {
-                                item(key = "hero_consensus_ind") {
-                                    HeroConsensusCard(analysis = analysis)
-                                }
-
-                                item(key = "pivot_ladder_ind") {
-                                    PivotLadderCard(
-                                        currentPrice = analysis.currentPrice,
-                                        pivotLevels = analysis.pivotLevels
+                        // --- TAB 1: 🏦 SMART MONEY SMC ---
+                        if (uiState.selectedTab == 1) {
+                            analysis.smartMoney?.let { smc ->
+                                item(key = "smart_money_smc_page") {
+                                    SmartMoneySmcCard(
+                                        smc = smc,
+                                        currentPrice = analysis.currentPrice
                                     )
                                 }
+                            }
+                        }
 
-                                items(analysis.groups, key = { it.key }) { group ->
-                                    IndicatorGroupCard(group = group)
+                        // --- TAB 2: 🌍 MACRO & NEWS ---
+                        if (uiState.selectedTab == 2) {
+                            analysis.macroRadar?.let { radar ->
+                                item(key = "macro_news_radar_page") {
+                                    MacroNewsRadarCard(radar = radar)
                                 }
                             }
+                        }
+
+                        // --- TAB 3: 🎯 PIVOT LADDER ---
+                        if (uiState.selectedTab == 3) {
+                            item(key = "pivot_ladder_tab") {
+                                PivotLadderCard(
+                                    currentPrice = analysis.currentPrice,
+                                    pivotLevels = analysis.pivotLevels
+                                )
+                            }
+                        }
+
+                        // --- TAB 4: ⚡ PRO TRICKS & RULES ---
+                        if (uiState.selectedTab == 4) {
+                            item(key = "trade_setup_tricks") {
+                                TradeSetupCard(
+                                    setup = analysis.tradeSetup,
+                                    onOpenCalculator = { slPips -> viewModel.openLotCalculator(slPips) }
+                                )
+                            }
+                        }
 
                         // Attribution & Disclaimer Footer
                         item(key = "footer") {
