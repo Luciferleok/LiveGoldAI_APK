@@ -509,7 +509,7 @@ object TechnicalEngine {
 
         // Group Summaries (Now 7 complete institutional pillars!)
         val groups = listOf(
-            GroupAnalysis(key = "trend", title = "Trend Strength", verdict = trendVerdict, indicators = trendItems),
+            GroupAnalysis(key = "trend", title = "Trend Strength", verdict = trendVerdict, indicators = trendItems + vwapIndicator(candles)),
             GroupAnalysis(key = "momentum", title = "Momentum Oscillators", verdict = momentumVerdict, indicators = momentumItems),
             GroupAnalysis(key = "volatility", title = "Volatility Bands", verdict = volatilityVerdict, indicators = volatilityItems),
             GroupAnalysis(key = "sr", title = "Support & Resistance", verdict = srVerdict, indicators = srItems),
@@ -1333,6 +1333,50 @@ object TechnicalEngine {
         if (negFlow == 0.0) return 100.0
         val moneyRatio = posFlow / negFlow
         return 100.0 - (100.0 / (1.0 + moneyRatio))
+    }
+
+    // VWAP: session-anchored (UTC day) if >=4 bars today, else rolling last 20 bars.
+    // Twelve Data gives no volume for XAU/USD, so it falls back to TWAP (equal weight).
+    private fun vwapIndicator(candles: List<CandleBar>): IndicatorItem {
+        if (candles.isEmpty()) {
+            return IndicatorItem(name = "VWAP", signal = Signal.WAIT, valueDisplay = "--", detail = "No candle data")
+        }
+        val ordered = if (candles.first().datetime <= candles.last().datetime) candles else candles.reversed()
+        val day = ordered.last().datetime.take(10)
+        val today = ordered.filter { it.datetime.take(10) == day }
+        val anchored = today.size >= 4
+        val bars = if (anchored) today else ordered.takeLast(20)
+        var pv = 0.0
+        var sv = 0.0
+        for (b in bars) {
+            val tp = (b.high + b.low + b.close) / 3.0
+            val v = b.volume?.takeIf { it > 0.0 } ?: 1.0
+            pv += tp * v
+            sv += v
+        }
+        val vwap = pv / sv
+        val dist = ordered.last().close - vwap
+        val kind = if (bars.any { (it.volume ?: 0.0) > 0.0 }) "VWAP" else "TWAP"
+        val basis = if (anchored) "today" else "last ${bars.size} bars"
+        val extended = kotlin.math.abs(dist) > 25.0
+        val sig = when {
+            extended -> Signal.WAIT
+            dist > 0.0 -> Signal.BUY
+            dist < 0.0 -> Signal.SELL
+            else -> Signal.WAIT
+        }
+        val note = when {
+            extended -> "Extended from VWAP, wait for pullback"
+            dist > 0.0 -> "Price above VWAP"
+            dist < 0.0 -> "Price below VWAP"
+            else -> "Price at VWAP"
+        }
+        return IndicatorItem(
+            name = "VWAP ($kind, $basis)",
+            signal = sig,
+            valueDisplay = "%.2f".format(vwap),
+            detail = "$note (${"%+.2f".format(dist)})"
+        )
     }
 
     fun fallbackAnalysis(interval: String = "4h"): GoldAnalysisResult {
