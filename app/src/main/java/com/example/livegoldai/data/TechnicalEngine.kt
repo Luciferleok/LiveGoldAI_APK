@@ -515,7 +515,7 @@ object TechnicalEngine {
 
         // Group Summaries (Now 7 complete institutional pillars!)
         val groups = listOf(
-            GroupAnalysis(key = "trend", title = "Trend Strength", verdict = trendVerdict, indicators = trendItems + vwapIndicator(candles)),
+            GroupAnalysis(key = "trend", title = "Trend Strength", verdict = trendVerdict, indicators = trendItems + vwapIndicator(candles) + ema50100Indicator(candles)),
             GroupAnalysis(key = "momentum", title = "Momentum Oscillators", verdict = momentumVerdict, indicators = momentumItems),
             GroupAnalysis(key = "volatility", title = "Volatility Bands", verdict = volatilityVerdict, indicators = volatilityItems),
             GroupAnalysis(key = "sr", title = "Support & Resistance", verdict = srVerdict, indicators = srItems),
@@ -1363,6 +1363,53 @@ object TechnicalEngine {
         val moneyRatio = posFlow / negFlow
         return 100.0 - (100.0 / (1.0 + moneyRatio))
     }
+
+    private fun emaTail(values: List<Double>, period: Int): Double? {
+        if (values.size < period) return null
+        val k = 2.0 / (period + 1)
+        var ema = values.take(period).average()
+        for (i in period until values.size) ema = values[i] * k + ema * (1 - k)
+        return ema
+    }
+
+    // EMA 50/100: medium-term trend filter.
+    private fun ema50100Indicator(candles: List<CandleBar>): IndicatorItem {
+        val ordered = if (candles.isNotEmpty() && candles.first().datetime > candles.last().datetime) candles.reversed() else candles
+        val closes = ordered.map { it.close }
+        val e50 = emaTail(closes, 50)
+        val e100 = emaTail(closes, 100)
+        if (e50 == null || e100 == null) {
+            return IndicatorItem(name = "EMA 50/100", signal = Signal.WAIT, valueDisplay = "--",
+                detail = "Need 100+ candles (have ${closes.size})")
+        }
+        val price = closes.last()
+        val prev = closes.dropLast(1)
+        val p50 = emaTail(prev, 50)
+        val p100 = emaTail(prev, 100)
+        val cross = when {
+            p50 != null && p100 != null && p50 <= p100 && e50 > e100 -> " | Fresh golden cross"
+            p50 != null && p100 != null && p50 >= p100 && e50 < e100 -> " | Fresh death cross"
+            else -> ""
+        }
+        val sig = when {
+            e50 > e100 && price > e50 -> Signal.BUY
+            e50 < e100 && price < e50 -> Signal.SELL
+            else -> Signal.WAIT
+        }
+        val note = when {
+            e50 > e100 && price > e50 -> "Uptrend: price > EMA50 > EMA100"
+            e50 < e100 && price < e50 -> "Downtrend: price < EMA50 < EMA100"
+            e50 > e100 -> "Uptrend, price below EMA50 (pullback)"
+            else -> "Downtrend, price above EMA50 (bounce)"
+        }
+        return IndicatorItem(
+            name = "EMA 50/100",
+            signal = sig,
+            valueDisplay = "%.2f / %.2f".format(e50, e100),
+            detail = note + cross
+        )
+    }
+
 
     // VWAP: session-anchored (UTC day) if >=4 bars today, else rolling last 20 bars.
     // Twelve Data gives no volume for XAU/USD, so it falls back to TWAP (equal weight).
