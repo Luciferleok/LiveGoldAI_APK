@@ -22,7 +22,24 @@ data class CandleBar(
     val bbLower: Double? = null,
     val superTrend: Double? = null,
     val volume: Double? = null,
-    val vwap: Double? = null
+    val vwap: Double? = null,
+    val buyVolume: Double? = null
+)
+
+@Serializable
+data class BuyerSellerSentiment(
+    val buyersPercent: Int,
+    val sellersPercent: Int,
+    val buyerVolume: Double,
+    val sellerVolume: Double,
+    val netVolumeDelta: Double,
+    val orderBookBidCount: Int,
+    val orderBookAskCount: Int,
+    val retailSentimentBias: Signal,
+    val institutionalSentimentBias: Signal,
+    val liveActionHindi: String,
+    val liveActionEnglish: String,
+    val strengthLevel: String
 )
 
 @Serializable
@@ -216,6 +233,52 @@ data class TradingTrick(
 )
 
 @Serializable
+enum class PredictionOutcomeStatus {
+    TP1_HIT,
+    TP2_HIT,
+    ALL_TARGETS_HIT,
+    STOP_LOSS_HIT,
+    IN_PROFIT_ACTIVE,
+    PENDING_ENTRY
+}
+
+@Serializable
+data class PastPredictionAuditItem(
+    val id: String,
+    val timestamp: String,
+    val timeAgo: String,
+    val signal: Signal,
+    val entryPrice: Double,
+    val target1Price: Double,
+    val target2Price: Double,
+    val stopLossPrice: Double,
+    val actualHighLowReached: Double,
+    val pipsResult: Double,
+    val outcomeStatus: PredictionOutcomeStatus,
+    val whyItHappenedHindi: String,
+    val whyItHappenedEnglish: String,
+    val lessonLearnedHindi: String,
+    val lessonLearnedEnglish: String,
+    val indicatorsInvolved: List<String>
+)
+
+@Serializable
+data class TimeframeAccuracyAudit(
+    val timeframe: String,
+    val totalSignalsTested: Int,
+    val winCount: Int,
+    val lossCount: Int,
+    val activeCount: Int,
+    val winRatePercent: Int,
+    val netPipsGained: Double,
+    val lastPredictionOutcome: PastPredictionAuditItem?,
+    val recentSignalAudits: List<PastPredictionAuditItem>,
+    val autoCorrectionRules: List<String>,
+    val autoCorrectionRulesHindi: List<String>,
+    val aiEngineLearningStatus: String
+)
+
+@Serializable
 data class GoldAnalysisResult(
     val symbol: String = "XAU/USD",
     val currentPrice: Double,
@@ -243,6 +306,8 @@ data class GoldAnalysisResult(
     val candleInsight: CandleReadingInsight? = null,
     val mtfMatrix: MultiTimeframeMatrix? = null,
     val tradingTricks: List<TradingTrick> = emptyList(),
+    val buyerSellerRatio: BuyerSellerSentiment? = null,
+    val timeframeAudit: TimeframeAccuracyAudit? = null,
     val isSimulatedFallback: Boolean = false,
     val newsMode: NewsModeStatus? = null
 )
