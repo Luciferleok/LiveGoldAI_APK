@@ -26,32 +26,67 @@ class GoldApiService(
         .build()
 
     private val json = Json { ignoreUnknownKeys = true }
+    private val memoryCache = mutableMapOf<String, Pair<Long, GoldAnalysisResult>>()
+    private val cacheTtlMs = 15_000L // 15 seconds cache to avoid API burnout
 
     fun setApiKey(newKey: String) {
         apiKey = newKey.trim()
+        memoryCache.clear()
     }
 
     fun getApiKey(): String = apiKey
 
+    private fun aggregateCandles(candles: List<CandleBar>, groupSize: Int): List<CandleBar> {
+        if (candles.size < groupSize || groupSize <= 1) return candles
+        val result = mutableListOf<CandleBar>()
+        val chunks = candles.chunked(groupSize)
+        for (chunk in chunks) {
+            if (chunk.isEmpty()) continue
+            val open = chunk.first().open
+            val close = chunk.last().close
+            val high = chunk.maxOf { it.high }
+            val low = chunk.minOf { it.low }
+            val volume = chunk.sumOf { it.volume ?: 0.0 }
+            val dt = chunk.last().datetime
+            result.add(CandleBar(datetime = dt, open = open, high = high, low = low, close = close, volume = volume))
+        }
+        return result
+    }
+
     suspend fun fetchAnalysis(interval: String = "4h", symbol: String = "XAU/USD"): Result<GoldAnalysisResult> = withContext(Dispatchers.IO) {
+        val normInterval = interval.lowercase().trim()
+
+        // Check 15-sec cache first to prevent rate limiting
+        val cached = memoryCache[normInterval]
+        val now = System.currentTimeMillis()
+        if (cached != null && (now - cached.first) < cacheTtlMs) {
+            return@withContext Result.success(cached.second)
+        }
+
         // Asynchronously fetch Macro Drivers in parallel so analysis has zero delay
         val dxyDeferred = async { fetchLiveDxy() }
         val us10yDeferred = async { fetchLiveUs10y() }
         val eventsDeferred = async { fetchLiveEconomicEvents() }
 
-        // Step 1: Map interval properly for TwelveData API
-        val tdInterval = when (interval.lowercase()) {
-            "15m", "15min" -> "15min"
-            "1h" -> "1h"
-            "4h" -> "4h"
-            "1d", "1day" -> "1day"
-            else -> "4h"
-        }
-
-        // Try TwelveData if API key is present
+        // Step 1: TwelveData API (if API key is active and within limit)
         if (apiKey.isNotBlank()) {
             try {
-                val tdUrl = "https://api.twelvedata.com/time_series?symbol=$symbol&interval=$tdInterval&outputsize=80&apikey=$apiKey&order=ASC"
+                val (tdInterval, tdGroup) = when (normInterval) {
+                    "5m" -> Pair("5min", 1)
+                    "10m" -> Pair("5min", 2)
+                    "15m", "15min" -> Pair("15min", 1)
+                    "30m" -> Pair("30min", 1)
+                    "45m" -> Pair("45min", 1)
+                    "1h" -> Pair("1h", 1)
+                    "2h" -> Pair("2h", 1)
+                    "3h" -> Pair("1h", 3)
+                    "4h" -> Pair("4h", 1)
+                    "6h" -> Pair("2h", 3)
+                    "1d", "1day" -> Pair("1day", 1)
+                    else -> Pair("4h", 1)
+                }
+                val outputSize = if (tdGroup > 1) 120 else 75
+                val tdUrl = "https://api.twelvedata.com/time_series?symbol=$symbol&interval=$tdInterval&outputsize=$outputSize&apikey=$apiKey&order=ASC"
                 val request = Request.Builder()
                     .url(tdUrl)
                     .header("User-Agent", "KalankarFXGoldPro/1.0")
@@ -61,9 +96,10 @@ class GoldApiService(
 
                 if (response.isSuccessful && !bodyString.isNullOrBlank()) {
                     val jsonElement = json.parseToJsonElement(bodyString).jsonObject
+                    val status = jsonElement["status"]?.jsonPrimitive?.content
                     val valuesArray = jsonElement["values"]?.jsonArray
-                    if (valuesArray != null && valuesArray.size >= 10) {
-                        val candleList = mutableListOf<CandleBar>()
+                    if (status != "error" && valuesArray != null && valuesArray.size >= 10) {
+                        val rawList = mutableListOf<CandleBar>()
                         for (item in valuesArray) {
                             val obj = item.jsonObject
                             val dt = obj["datetime"]?.jsonPrimitive?.content ?: ""
@@ -71,10 +107,12 @@ class GoldApiService(
                             val h = obj["high"]?.jsonPrimitive?.double ?: 0.0
                             val l = obj["low"]?.jsonPrimitive?.double ?: 0.0
                             val c = obj["close"]?.jsonPrimitive?.double ?: 0.0
+                            val v = obj["volume"]?.jsonPrimitive?.double ?: 1000.0
                             if (c > 0.0) {
-                                candleList.add(CandleBar(datetime = dt, open = o, high = h, low = l, close = c))
+                                rawList.add(CandleBar(datetime = dt, open = o, high = h, low = l, close = c, volume = v))
                             }
                         }
+                        val candleList = if (tdGroup > 1) aggregateCandles(rawList, tdGroup) else rawList
                         if (candleList.size >= 10) {
                             val analysis = TechnicalEngine.analyze(
                                 candles = candleList,
@@ -83,25 +121,35 @@ class GoldApiService(
                                 customUs10y = us10yDeferred.await(),
                                 customEvents = eventsDeferred.await()
                             )
-                            return@withContext Result.success(analysis.copy(isSimulatedFallback = false))
+                            val finalResult = analysis.copy(isSimulatedFallback = false)
+                            memoryCache[normInterval] = Pair(System.currentTimeMillis(), finalResult)
+                            return@withContext Result.success(finalResult)
                         }
                     }
                 }
             } catch (_: Exception) {
-                // TwelveData rate-limited or failed, fall through to primary Gold live stream
+                // TwelveData rate-limited (e.g. >8 req/min or 800/day), seamless auto-failover
             }
         }
 
-        // Step 2: High-availability live Gold stream (PAXG / LBMA Gold Spot, 24/7 second-by-second)
+        // Step 2: High-availability live Gold stream (Binance PAXG/USDT - 100% LBMA Gold Bullion Spot)
+        // Completely free, NO API key required, 1200 req/min limit, 24/7 second-by-second live updates
         try {
-            val binanceInterval = when (interval.lowercase()) {
-                "15m", "15min" -> "15m"
-                "1h" -> "1h"
-                "4h" -> "4h"
-                "1d", "1day" -> "1d"
-                else -> "4h"
+            val (binanceInterval, binanceGroup, limit) = when (normInterval) {
+                "5m" -> Triple("5m", 1, 70)
+                "10m" -> Triple("5m", 2, 120)
+                "15m", "15min" -> Triple("15m", 1, 70)
+                "30m" -> Triple("30m", 1, 70)
+                "45m" -> Triple("15m", 3, 120)
+                "1h" -> Triple("1h", 1, 70)
+                "2h" -> Triple("2h", 1, 70)
+                "3h" -> Triple("1h", 3, 120)
+                "4h" -> Triple("4h", 1, 70)
+                "6h" -> Triple("6h", 1, 70)
+                "1d", "1day" -> Triple("1d", 1, 70)
+                else -> Triple("4h", 1, 70)
             }
-            val liveUrl = "https://api.binance.com/api/v3/klines?symbol=PAXGUSDT&interval=$binanceInterval&limit=60"
+            val liveUrl = "https://api.binance.com/api/v3/klines?symbol=PAXGUSDT&interval=$binanceInterval&limit=$limit"
             val request = Request.Builder()
                 .url(liveUrl)
                 .header("User-Agent", "KalankarFXGoldPro/1.0")
@@ -112,7 +160,7 @@ class GoldApiService(
             if (response.isSuccessful && !bodyString.isNullOrBlank()) {
                 val klines = json.parseToJsonElement(bodyString).jsonArray
                 if (klines.size >= 10) {
-                    val candleList = mutableListOf<CandleBar>()
+                    val rawList = mutableListOf<CandleBar>()
                     val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US)
                     for (item in klines) {
                         val arr = item.jsonArray
@@ -123,7 +171,7 @@ class GoldApiService(
                         val c = arr[4].jsonPrimitive.content.toDoubleOrNull() ?: 0.0
                         val v = arr[5].jsonPrimitive.content.toDoubleOrNull() ?: 0.0
                         if (c > 0.0) {
-                            candleList.add(
+                            rawList.add(
                                 CandleBar(
                                     datetime = sdf.format(Date(timeMs)),
                                     open = o,
@@ -135,6 +183,7 @@ class GoldApiService(
                             )
                         }
                     }
+                    val candleList = if (binanceGroup > 1) aggregateCandles(rawList, binanceGroup) else rawList
                     if (candleList.size >= 10) {
                         val analysis = TechnicalEngine.analyze(
                             candles = candleList,
@@ -143,13 +192,74 @@ class GoldApiService(
                             customUs10y = us10yDeferred.await(),
                             customEvents = eventsDeferred.await()
                         )
-                        return@withContext Result.success(analysis.copy(isSimulatedFallback = false))
+                        val finalResult = analysis.copy(isSimulatedFallback = false)
+                        memoryCache[normInterval] = Pair(System.currentTimeMillis(), finalResult)
+                        return@withContext Result.success(finalResult)
                     }
                 }
             }
         } catch (_: Exception) {
-            // Both live endpoints unreachable (offline device)
+            // Live PAXG failover attempted
         }
+
+        // Step 2.5: Third Live Backup - Yahoo Finance (GC=F Gold Spot Futures, Zero API Key)
+        try {
+            val (yfInterval, yfRange) = when (normInterval) {
+                "5m", "10m" -> Pair("5m", "1d")
+                "15m", "30m", "45m" -> Pair("15m", "5d")
+                "1h", "2h", "3h", "4h", "6h" -> Pair("60m", "1mo")
+                "1d", "1day" -> Pair("1d", "3mo")
+                else -> Pair("60m", "1mo")
+            }
+            val yfUrl = "https://query1.finance.yahoo.com/v8/finance/chart/GC=F?interval=$yfInterval&range=$yfRange"
+            val request = Request.Builder()
+                .url(yfUrl)
+                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+                .build()
+            val response = client.newCall(request).execute()
+            val bodyString = response.body?.string()
+
+            if (response.isSuccessful && !bodyString.isNullOrBlank()) {
+                val root = json.parseToJsonElement(bodyString).jsonObject
+                val resultObj = root["chart"]?.jsonObject?.get("result")?.jsonArray?.get(0)?.jsonObject
+                val timestampArr = resultObj?.get("timestamp")?.jsonArray
+                val indicators = resultObj?.get("indicators")?.jsonObject
+                val quote = indicators?.get("quote")?.jsonArray?.get(0)?.jsonObject
+                val opens = quote?.get("open")?.jsonArray
+                val highs = quote?.get("high")?.jsonArray
+                val lows = quote?.get("low")?.jsonArray
+                val closes = quote?.get("close")?.jsonArray
+                val volumes = quote?.get("volume")?.jsonArray
+
+                if (timestampArr != null && closes != null && timestampArr.size >= 10) {
+                    val rawList = mutableListOf<CandleBar>()
+                    val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US)
+                    for (i in timestampArr.indices) {
+                        val ts = timestampArr[i].jsonPrimitive.content.toLongOrNull() ?: continue
+                        val c = closes[i].jsonPrimitive.content.toDoubleOrNull() ?: continue
+                        val o = opens?.get(i)?.jsonPrimitive?.content?.toDoubleOrNull() ?: c
+                        val h = highs?.get(i)?.jsonPrimitive?.content?.toDoubleOrNull() ?: maxOf(o, c)
+                        val l = lows?.get(i)?.jsonPrimitive?.content?.toDoubleOrNull() ?: minOf(o, c)
+                        val v = volumes?.get(i)?.jsonPrimitive?.content?.toDoubleOrNull() ?: 1000.0
+                        if (c > 0.0) {
+                            rawList.add(CandleBar(datetime = sdf.format(Date(ts * 1000L)), open = o, high = h, low = l, close = c, volume = v))
+                        }
+                    }
+                    if (rawList.size >= 10) {
+                        val analysis = TechnicalEngine.analyze(
+                            candles = rawList.takeLast(70),
+                            interval = interval,
+                            customDxy = dxyDeferred.await(),
+                            customUs10y = us10yDeferred.await(),
+                            customEvents = eventsDeferred.await()
+                        )
+                        val finalResult = analysis.copy(isSimulatedFallback = false)
+                        memoryCache[normInterval] = Pair(System.currentTimeMillis(), finalResult)
+                        return@withContext Result.success(finalResult)
+                    }
+                }
+            }
+        } catch (_: Exception) {}
 
         // Step 3: Offline cached fallback engine (updated to current market prices)
         val fallback = TechnicalEngine.fallbackAnalysis(interval)

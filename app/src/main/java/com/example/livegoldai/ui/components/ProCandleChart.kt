@@ -5,7 +5,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -42,6 +44,7 @@ fun ProCandleChart(
     var showEma by remember { mutableStateOf(true) }
     var showBb by remember { mutableStateOf(false) }
     var showVolume by remember { mutableStateOf(true) }
+    var showVwap by remember { mutableStateOf(true) }
 
     var selectedCandleIndex by remember { mutableStateOf<Int?>(null) }
 
@@ -165,6 +168,9 @@ fun ProCandleChart(
                             HudItem(label = "H", value = String.format(Locale.US, "%.1f", activeCandle.high))
                             HudItem(label = "L", value = String.format(Locale.US, "%.1f", activeCandle.low))
                             HudItem(label = "C", value = String.format(Locale.US, "%.1f", activeCandle.close), color = if (isBull) SignalBuy else SignalSell)
+                            activeCandle.vwap?.let {
+                                HudItem(label = "VWAP", value = String.format(Locale.US, "%.1f", it), color = Color(0xFFFF9100))
+                            }
                         }
                     }
                 }
@@ -350,6 +356,31 @@ fun ProCandleChart(
                         }
                     }
 
+                    // Draw VWAP (Volume-Weighted Average Price) Line (Amber)
+                    if (showVwap) {
+                        val vwapPath = Path()
+                        var firstVwap = false
+                        displayCandles.forEachIndexed { i, c ->
+                            val x = (i * slotWidth) + (slotWidth / 2f)
+                            if (c.vwap != null) {
+                                val vy = priceToY(c.vwap)
+                                if (!firstVwap) {
+                                    vwapPath.moveTo(x, vy)
+                                    firstVwap = true
+                                } else {
+                                    vwapPath.lineTo(x, vy)
+                                }
+                            }
+                        }
+                        if (firstVwap) {
+                            drawPath(
+                                vwapPath,
+                                color = Color(0xFFFF9100),
+                                style = Stroke(width = 2.0f)
+                            )
+                        }
+                    }
+
                     // Draw Candlesticks (Wick + Body)
                     displayCandles.forEachIndexed { index, candle ->
                         val isBullish = candle.close >= candle.open
@@ -423,8 +454,11 @@ fun ProCandleChart(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Toggles for SuperTrend, EMA, BB, Volume
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                // Toggles for SuperTrend, EMA, BB, Volume, VWAP
+                Row(
+                    modifier = Modifier.weight(1f, fill = false).horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
                     ChartToggleChip(
                         label = "SUPERTREND",
                         isActive = showSuperTrend,
@@ -436,6 +470,12 @@ fun ProCandleChart(
                         isActive = showEma,
                         activeColor = GoldLight,
                         onClick = { showEma = !showEma }
+                    )
+                    ChartToggleChip(
+                        label = "VWAP",
+                        isActive = showVwap,
+                        activeColor = Color(0xFFFF9100),
+                        onClick = { showVwap = !showVwap }
                     )
                     ChartToggleChip(
                         label = "BB 2.0",

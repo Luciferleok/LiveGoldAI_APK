@@ -8,7 +8,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -293,13 +295,28 @@ fun PriceHeaderCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Timeframe selection chips
+            // Timeframe selection chips (5m, 10m, 15m, 30m, 45m, 1h, 2h, 3h, 4h, 6h, 1day)
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                val intervals = listOf("15m", "1h", "4h", "1day")
-                val labels = mapOf("15m" to "15M", "1h" to "1H", "4h" to "4H", "1day" to "1D")
+                val intervals = listOf("5m", "10m", "15m", "30m", "45m", "1h", "2h", "3h", "4h", "6h", "1day")
+                val labels = mapOf(
+                    "5m" to "5M",
+                    "10m" to "10M",
+                    "15m" to "15M",
+                    "30m" to "30M",
+                    "45m" to "45M",
+                    "1h" to "1H",
+                    "2h" to "2H",
+                    "3h" to "3H",
+                    "4h" to "4H",
+                    "6h" to "6H",
+                    "1day" to "1D"
+                )
 
                 intervals.forEach { interval ->
                     val isSelected = interval == selectedInterval
@@ -308,13 +325,12 @@ fun PriceHeaderCard(
                         color = if (isSelected) GoldPrimary else ObsidianSurfaceElevated,
                         border = if (isSelected) null else CardDefaults.outlinedCardBorder().copy(brush = Brush.linearGradient(listOf(ObsidianBorderHighlight, ObsidianBorder))),
                         modifier = Modifier
-                            .weight(1f)
                             .clip(RoundedCornerShape(10.dp))
                             .clickable { onIntervalSelected(interval) }
                             .testTag("timeframe_$interval")
                     ) {
                         Box(
-                            modifier = Modifier.padding(vertical = 8.dp),
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(

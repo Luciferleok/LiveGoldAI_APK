@@ -21,7 +21,8 @@ data class CandleBar(
     val bbUpper: Double? = null,
     val bbLower: Double? = null,
     val superTrend: Double? = null,
-    val volume: Double? = null
+    val volume: Double? = null,
+    val vwap: Double? = null
 )
 
 @Serializable

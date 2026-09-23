@@ -259,6 +259,12 @@ object TechnicalEngine {
                 signal = if (sarBull) Signal.BUY else Signal.SELL,
                 valueDisplay = if (sarBull) "BULLISH (Above 5-low)" else "BEARISH (Below 5-low)",
                 detail = if (sarBull) "Price holding above recent swing-low support" else "Price breached recent swing-low"
+            ),
+            IndicatorItem(
+                name = "Institutional VWAP",
+                signal = vwapSignal,
+                valueDisplay = "VWAP: $${format2(vwapValue)} | Spot: $${format2(last.close)}",
+                detail = if (last.close > vwapValue) "Price holding above volume-weighted average (Bullish institutional premium)" else "Price trading below volume-weighted average (Bearish discount)"
             )
         )
         val trendVerdict = decide(trendItems.map { it.signal })
@@ -529,7 +535,8 @@ object TechnicalEngine {
             else -> Pair(Signal.WAIT, 0.0)
         }
 
-        // Enrich candles with EMA, Bollinger bands, and SuperTrend for chart overlays
+        // Enrich candles with EMA, Bollinger bands, SuperTrend, and rolling VWAP for chart overlays
+        val vwapSeries = calculateRollingVwap(candles, 30)
         val enrichedCandles = candles.takeLast(60).mapIndexed { idx, bar ->
             val globalIdx = (candles.size - min(60, candles.size)) + idx
             val cEma9 = if (globalIdx < ema9.size) ema9[globalIdx] else null
@@ -547,6 +554,7 @@ object TechnicalEngine {
                 m - 2 * sd
             } else null
             val cSuperTrend = if (globalIdx < superTrendSeries.size) superTrendSeries[globalIdx] else null
+            val cVwap = if (globalIdx < vwapSeries.size) vwapSeries[globalIdx] else null
             val estVolume = (abs(bar.close - bar.open) + (bar.high - bar.low)) * 1420.0 + 800.0
 
             bar.copy(
@@ -555,7 +563,8 @@ object TechnicalEngine {
                 bbUpper = cBbUpper,
                 bbLower = cBbLower,
                 superTrend = cSuperTrend,
-                volume = estVolume
+                volume = estVolume,
+                vwap = cVwap
             )
         }
 
@@ -1312,6 +1321,26 @@ object TechnicalEngine {
             sumV += vol
         }
         return if (sumV > 0.0) sumPv / sumV else candles.last().close
+    }
+
+    private fun calculateRollingVwap(candles: List<CandleBar>, period: Int = 30): List<Double> {
+        val n = candles.size
+        if (n == 0) return emptyList()
+        val result = ArrayList<Double>(n)
+        for (i in 0 until n) {
+            val start = max(0, i - period + 1)
+            var sumPv = 0.0
+            var sumV = 0.0
+            for (j in start..i) {
+                val c = candles[j]
+                val tp = (c.high + c.low + c.close) / 3.0
+                val vol = c.volume ?: ((abs(c.close - c.open) + (c.high - c.low)) * 1420.0 + 800.0)
+                sumPv += tp * vol
+                sumV += vol
+            }
+            result.add(if (sumV > 0.0) sumPv / sumV else candles[i].close)
+        }
+        return result
     }
 
     private fun calculateMfi(candles: List<CandleBar>, period: Int = 14): Double {
