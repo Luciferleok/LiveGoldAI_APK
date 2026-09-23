@@ -14,6 +14,7 @@ import okhttp3.Request
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 
@@ -121,7 +122,7 @@ class GoldApiService(
                                 customUs10y = us10yDeferred.await(),
                                 customEvents = eventsDeferred.await()
                             )
-                            val finalResult = analysis.copy(isSimulatedFallback = false)
+                            val finalResult = applyNewsMode(analysis.copy(isSimulatedFallback = false), eventsDeferred.await())
                             memoryCache[normInterval] = Pair(System.currentTimeMillis(), finalResult)
                             return@withContext Result.success(finalResult)
                         }
@@ -192,7 +193,7 @@ class GoldApiService(
                             customUs10y = us10yDeferred.await(),
                             customEvents = eventsDeferred.await()
                         )
-                        val finalResult = analysis.copy(isSimulatedFallback = false)
+                        val finalResult = applyNewsMode(analysis.copy(isSimulatedFallback = false), eventsDeferred.await())
                         memoryCache[normInterval] = Pair(System.currentTimeMillis(), finalResult)
                         return@withContext Result.success(finalResult)
                     }
@@ -253,7 +254,7 @@ class GoldApiService(
                             customUs10y = us10yDeferred.await(),
                             customEvents = eventsDeferred.await()
                         )
-                        val finalResult = analysis.copy(isSimulatedFallback = false)
+                        val finalResult = applyNewsMode(analysis.copy(isSimulatedFallback = false), eventsDeferred.await())
                         memoryCache[normInterval] = Pair(System.currentTimeMillis(), finalResult)
                         return@withContext Result.success(finalResult)
                     }
@@ -352,8 +353,9 @@ class GoldApiService(
                         val impact = obj["impact"]?.jsonPrimitive?.content ?: "Low"
                         val forecast = obj["forecast"]?.jsonPrimitive?.content ?: ""
                         val previous = obj["previous"]?.jsonPrimitive?.content ?: ""
-                        val timeStr = if (date.contains("T")) date.substringAfter("T").take(5) + " UTC" else "Intraday"
-                        val dateStr = if (date.contains("T")) date.substringBefore("T") else "This Week"
+                        val evMs = parseFfTimeMs(date)
+                        val timeStr = if (evMs != null) utcFormat("HH:mm", evMs) + " UTC" else "Intraday"
+                        val dateStr = if (evMs != null) utcFormat("yyyy-MM-dd", evMs) else "This Week"
                         list.add(
                             EconomicEvent(
                                 title = title,
@@ -363,6 +365,7 @@ class GoldApiService(
                                 impact = impact,
                                 forecast = forecast,
                                 previous = previous,
+                                isoTime = date,
                                 goldImpact = when (impact.lowercase()) {
                                     "high" -> "High Volatility Spike Expected"
                                     "medium" -> "Moderate Price Reaction"
@@ -371,9 +374,14 @@ class GoldApiService(
                             )
                         )
                     }
-                    if (list.size >= 8) break
                 }
-                if (list.isNotEmpty()) return list
+                if (list.isNotEmpty()) {
+                    val cutoff = System.currentTimeMillis() - 60 * 60_000L
+                    val upcoming = list
+                        .filter { (parseFfTimeMs(it.isoTime) ?: Long.MAX_VALUE) >= cutoff }
+                        .sortedBy { parseFfTimeMs(it.isoTime) ?: Long.MAX_VALUE }
+                    return upcoming.ifEmpty { list.takeLast(8) }
+                }
             }
         } catch (_: Exception) {}
 
@@ -383,5 +391,90 @@ class GoldApiService(
             EconomicEvent("ADP Non-Farm Employment Change", "USD", "This Week", "12:15 UTC", "High", "145K", "152K", "Labor cooling accelerates rate cuts")
         )
     }
-}
 
+    // ---------------- NEWS MODE ----------------
+    // High-impact USD news ke 30 min pehle se 30 min baad tak app "News Mode" mein rehta hai.
+    private val newsBaseline = mutableMapOf<String, Double>()
+
+    // ForexFactory time "2026-09-24T08:30:00-04:00" (New York time) -> UTC millis
+    private fun parseFfTimeMs(iso: String): Long? {
+        return try {
+            if (!iso.contains("T") || iso.length < 19) return null
+            val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US)
+            sdf.timeZone = TimeZone.getTimeZone("UTC")
+            val localMs = sdf.parse(iso.substring(0, 19))?.time ?: return null
+            val tz = iso.substring(19)
+            val offsetMin = if (tz.length >= 6 && (tz[0] == '+' || tz[0] == '-')) {
+                val sign = if (tz[0] == '-') -1 else 1
+                sign * (tz.substring(1, 3).toInt() * 60 + tz.substring(4, 6).toInt())
+            } else 0
+            localMs - offsetMin * 60_000L
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private fun utcFormat(pattern: String, ms: Long): String {
+        val f = SimpleDateFormat(pattern, Locale.US)
+        f.timeZone = TimeZone.getTimeZone("UTC")
+        return f.format(Date(ms))
+    }
+
+    private fun applyNewsMode(result: GoldAnalysisResult, events: List<EconomicEvent>): GoldAnalysisResult {
+        val now = System.currentTimeMillis()
+        val window = 30 * 60_000L
+        val hit = events.mapNotNull { ev ->
+            if (!ev.impact.equals("High", ignoreCase = true)) null
+            else parseFfTimeMs(ev.isoTime)?.let { t -> if ((t - now) in -window..window) Pair(ev, t) else null }
+        }.minByOrNull { abs(it.second - now) } ?: return result
+
+        val ev = hit.first
+        val t = hit.second
+        val price = result.currentPrice
+        val tech = result.overallSignal
+        val fcst = if (ev.forecast.isNotBlank()) " Forecast: ${ev.forecast} | Previous: ${ev.previous.ifBlank { "N/A" }}." else ""
+
+        val status = if (t > now) {
+            newsBaseline[ev.isoTime] = price
+            val mins = (t - now) / 60_000L + 1
+            NewsModeStatus(
+                phase = "PRE",
+                eventTitle = ev.title,
+                minutes = mins,
+                newsSignal = Signal.WAIT,
+                technicalSignal = tech,
+                headline = "USD ${ev.title} - $mins min mein",
+                detail = "High-impact news aane wali hai. Spread badhta hai aur price dono taraf spike kar sakta hai, naya trade mat kholo.$fcst"
+            )
+        } else {
+            val since = (now - t) / 60_000L
+            val hadBase = newsBaseline.containsKey(ev.isoTime)
+            val base = newsBaseline.getOrPut(ev.isoTime) { price }
+            val move = price - base
+            val mv = String.format(Locale.US, "%+.2f", move)
+            val from = if (hadBase) "release se pehle ke price se" else "app khulne ke baad se"
+            val sig = when {
+                since < 5 -> Signal.WAIT
+                move >= 5.0 -> Signal.BUY
+                move <= -5.0 -> Signal.SELL
+                else -> Signal.WAIT
+            }
+            val why = when {
+                since < 5 -> "Release ke pehle 5 min spike phase hota hai, fake move bahut aate hain. Candle settle hone do."
+                move >= 5.0 -> "Gold $mv ($from) - market news ko gold ke liye positive le raha hai."
+                move <= -5.0 -> "Gold $mv ($from) - market news ko gold ke liye negative le raha hai."
+                else -> "Abhi saaf reaction nahi ($mv $from). Direction banne ka wait karo."
+            }
+            NewsModeStatus(
+                phase = "POST",
+                eventTitle = ev.title,
+                minutes = since,
+                newsSignal = sig,
+                technicalSignal = tech,
+                headline = "USD ${ev.title} - $since min pehle release hui",
+                detail = why
+            )
+        }
+        return result.copy(overallSignal = status.newsSignal, newsMode = status)
+    }
+}

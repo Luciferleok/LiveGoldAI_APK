@@ -34,7 +34,8 @@ data class EconomicEvent(
     val impact: String, // "High", "Medium", "Low", "Holiday"
     val forecast: String = "",
     val previous: String = "",
-    val goldImpact: String = "Volatile Reaction"
+    val goldImpact: String = "Volatile Reaction",
+    val isoTime: String = ""
 )
 
 @Serializable
@@ -242,6 +243,17 @@ data class GoldAnalysisResult(
     val candleInsight: CandleReadingInsight? = null,
     val mtfMatrix: MultiTimeframeMatrix? = null,
     val tradingTricks: List<TradingTrick> = emptyList(),
-    val isSimulatedFallback: Boolean = false
+    val isSimulatedFallback: Boolean = false,
+    val newsMode: NewsModeStatus? = null
 )
 
+@Serializable
+data class NewsModeStatus(
+    val phase: String, // "PRE" = release aane wali hai, "POST" = release ho chuki
+    val eventTitle: String,
+    val minutes: Long,
+    val newsSignal: Signal,
+    val technicalSignal: Signal,
+    val headline: String,
+    val detail: String
+)

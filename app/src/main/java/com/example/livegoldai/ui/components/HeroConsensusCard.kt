@@ -88,6 +88,47 @@ fun HeroConsensusCard(
                 .padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            analysis.newsMode?.let { nm ->
+                val bannerColor = if (nm.phase == "PRE") AmberWarning else NeonRed
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    color = bannerColor.copy(alpha = 0.15f),
+                    border = CardDefaults.outlinedCardBorder().copy(
+                        brush = Brush.linearGradient(listOf(bannerColor, bannerColor.copy(alpha = 0.3f)))
+                    )
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            text = if (nm.phase == "PRE") "⚠️ NEWS MODE • RELEASE AANE WALI HAI" else "📰 NEWS MODE • NEWS-BASED PREDICTION",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = bannerColor
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = nm.headline,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = nm.detail,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "Technical signal (paused): ${nm.technicalSignal.name}",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = TextMuted
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(14.dp))
+            }
+
             // Header with luxury badge
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -103,7 +144,7 @@ fun HeroConsensusCard(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "OVERALL SIGNAL CONSENSUS",
+                        text = if (analysis.newsMode != null) "NEWS-BASED SIGNAL" else "OVERALL SIGNAL CONSENSUS",
                         style = MaterialTheme.typography.labelMedium,
                         color = TextMuted,
                         letterSpacing = 1.2.sp
@@ -116,7 +157,7 @@ fun HeroConsensusCard(
                     border = CardDefaults.outlinedCardBorder().copy(brush = Brush.linearGradient(listOf(GoldPrimary, GoldDark)))
                 ) {
                     Text(
-                        text = "5 GROUPS",
+                        text = "${analysis.groups.size} GROUPS",
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                         style = MaterialTheme.typography.labelMedium,
                         color = GoldLight,
