@@ -85,7 +85,7 @@ class GoldApiService(
                     "1d", "1day" -> Pair("1day", 1)
                     else -> Pair("4h", 1)
                 }
-                val outputSize = if (tdGroup > 1) 120 else 75
+                val outputSize = (200 * tdGroup).coerceAtMost(5000)
                 val tdUrl = "https://api.twelvedata.com/time_series?symbol=$symbol&interval=$tdInterval&outputsize=$outputSize&apikey=$apiKey&order=ASC"
                 val request = Request.Builder()
                     .url(tdUrl)
