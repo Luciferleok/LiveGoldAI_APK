@@ -48,8 +48,9 @@ class GoldApiService(
             val high = chunk.maxOf { it.high }
             val low = chunk.minOf { it.low }
             val volume = chunk.sumOf { it.volume ?: 0.0 }
+            val buyVolume = chunk.sumOf { it.buyVolume ?: ((it.volume ?: 0.0) * (if (it.close >= it.open) 0.6 else 0.4)) }
             val dt = chunk.last().datetime
-            result.add(CandleBar(datetime = dt, open = open, high = high, low = low, close = close, volume = volume))
+            result.add(CandleBar(datetime = dt, open = open, high = high, low = low, close = close, volume = volume, buyVolume = buyVolume))
         }
         return result
     }
@@ -110,7 +111,10 @@ class GoldApiService(
                             val c = obj["close"]?.jsonPrimitive?.double ?: 0.0
                             val v = obj["volume"]?.jsonPrimitive?.double ?: 1000.0
                             if (c > 0.0) {
-                                rawList.add(CandleBar(datetime = dt, open = o, high = h, low = l, close = c, volume = v))
+                                val rng = (h - l).coerceAtLeast(0.01)
+                                val buyRatio = if (c >= o) (0.52 + 0.38 * (c - o) / rng) else (0.48 - 0.38 * (o - c) / rng)
+                                val buyV = v * buyRatio.coerceIn(0.12, 0.88)
+                                rawList.add(CandleBar(datetime = dt, open = o, high = h, low = l, close = c, volume = v, buyVolume = buyV))
                             }
                         }
                         val candleList = if (tdGroup > 1) aggregateCandles(rawList, tdGroup) else rawList
@@ -171,6 +175,8 @@ class GoldApiService(
                         val l = arr[3].jsonPrimitive.content.toDoubleOrNull() ?: 0.0
                         val c = arr[4].jsonPrimitive.content.toDoubleOrNull() ?: 0.0
                         val v = arr[5].jsonPrimitive.content.toDoubleOrNull() ?: 0.0
+                        val takerBuyV = if (arr.size > 9) arr[9].jsonPrimitive.content.toDoubleOrNull() else null
+                        val buyV = takerBuyV ?: (v * (if (c >= o) 0.58 else 0.42))
                         if (c > 0.0) {
                             rawList.add(
                                 CandleBar(
@@ -179,7 +185,8 @@ class GoldApiService(
                                     high = h,
                                     low = l,
                                     close = c,
-                                    volume = v
+                                    volume = v,
+                                    buyVolume = buyV
                                 )
                             )
                         }
@@ -243,7 +250,10 @@ class GoldApiService(
                         val l = lows?.get(i)?.jsonPrimitive?.content?.toDoubleOrNull() ?: minOf(o, c)
                         val v = volumes?.get(i)?.jsonPrimitive?.content?.toDoubleOrNull() ?: 1000.0
                         if (c > 0.0) {
-                            rawList.add(CandleBar(datetime = sdf.format(Date(ts * 1000L)), open = o, high = h, low = l, close = c, volume = v))
+                            val rng = (h - l).coerceAtLeast(0.01)
+                            val buyRatio = if (c >= o) (0.52 + 0.38 * (c - o) / rng) else (0.48 - 0.38 * (o - c) / rng)
+                            val buyV = v * buyRatio.coerceIn(0.12, 0.88)
+                            rawList.add(CandleBar(datetime = sdf.format(Date(ts * 1000L)), open = o, high = h, low = l, close = c, volume = v, buyVolume = buyV))
                         }
                     }
                     if (rawList.size >= 10) {

@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.livegoldai.model.GoldAnalysisResult
+import com.example.livegoldai.model.PredictionOutcomeStatus
 import com.example.livegoldai.model.Signal
 import com.example.livegoldai.theme.*
 import java.util.Locale
@@ -265,6 +266,87 @@ fun KyaHogaPredictionDialog(
                                             fontSize = 11.sp,
                                             lineHeight = 16.sp
                                         )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // 1.5 Timeframe Accuracy & Last Prediction Outcome Banner
+                    analysis.timeframeAudit?.let { audit ->
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = ObsidianSurfaceCard,
+                            border = CardDefaults.outlinedCardBorder().copy(
+                                brush = Brush.linearGradient(listOf(GoldPrimary.copy(alpha = 0.6f), ObsidianBorderHighlight))
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(14.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(text = "🏆", fontSize = 14.sp)
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = "${audit.timeframe} ACCURACY: ${audit.winRatePercent}% WIN RATE",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = FontWeight.Black,
+                                            color = GoldLight
+                                        )
+                                    }
+                                    Text(
+                                        text = "${audit.winCount} Won / ${audit.lossCount} Lost",
+                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                        fontWeight = FontWeight.Bold,
+                                        color = SignalBuy
+                                    )
+                                }
+
+                                audit.lastPredictionOutcome?.let { last ->
+                                    val isWin = last.outcomeStatus == PredictionOutcomeStatus.TP1_HIT ||
+                                            last.outcomeStatus == PredictionOutcomeStatus.TP2_HIT
+                                    val outcomeColor = if (isWin) SignalBuy else SignalSell
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Surface(
+                                        shape = RoundedCornerShape(10.dp),
+                                        color = outcomeColor.copy(alpha = 0.12f),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Column(modifier = Modifier.padding(10.dp)) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    text = if (isWin) "✅ Pichhla Signal: Target Hit (+${last.pipsResult} Pips)" else "⚠️ Pichhla Signal: SL Hit (${last.pipsResult} Pips)",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    fontWeight = FontWeight.Black,
+                                                    color = outcomeColor
+                                                )
+                                                Text(
+                                                    text = last.timeAgo,
+                                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                                    color = TextMuted
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(
+                                                text = "Kyu hua: ${last.whyItHappenedHindi}",
+                                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp, lineHeight = 15.sp),
+                                                color = TextPrimary
+                                            )
+                                            Spacer(modifier = Modifier.height(3.dp))
+                                            Text(
+                                                text = "Aage kya seekha: ${last.lessonLearnedHindi}",
+                                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp, lineHeight = 15.sp),
+                                                color = GoldLight
+                                            )
+                                        }
                                     }
                                 }
                             }

@@ -27,6 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.livegoldai.model.GoldAnalysisResult
+import com.example.livegoldai.model.PredictionOutcomeStatus
 import com.example.livegoldai.model.Signal
 import com.example.livegoldai.theme.*
 import java.util.Locale
@@ -260,6 +261,65 @@ fun PredictionBigCard(
                         color = TextSecondary,
                         fontSize = 9.sp
                     )
+                }
+            }
+
+            // TIMEFRAME ACCURACY & PAST SIGNAL RESULT STRIP
+            analysis.timeframeAudit?.let { audit ->
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = ObsidianSurfaceElevated,
+                    border = BorderStroke(1.dp, GoldPrimary.copy(alpha = 0.5f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(10.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(text = "🏆", fontSize = 12.sp)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "${audit.timeframe} ACCURACY: ${audit.winRatePercent}% WIN RATE",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Black,
+                                    color = GoldLight,
+                                    fontSize = 11.sp
+                                )
+                            }
+                            Text(
+                                text = "${audit.winCount} Won / ${audit.lossCount} Lost",
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                fontWeight = FontWeight.Bold,
+                                color = SignalBuy
+                            )
+                        }
+
+                        audit.lastPredictionOutcome?.let { last ->
+                            val isWin = last.outcomeStatus == PredictionOutcomeStatus.TP1_HIT ||
+                                    last.outcomeStatus == PredictionOutcomeStatus.TP2_HIT
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = if (isWin) "Last: TP Hit (+${last.pipsResult} Pips) 🟢" else "Last: SL Hit (${last.pipsResult} Pips) 🔴",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isWin) SignalBuy else SignalSell
+                                )
+                                Text(
+                                    text = "AI Self-Corrected 🧠",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                    color = TextMuted
+                                )
+                            }
+                        }
+                    }
                 }
             }
 

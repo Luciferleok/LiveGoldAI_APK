@@ -26,15 +26,18 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.livegoldai.model.BuyerSellerSentiment
 import com.example.livegoldai.model.CandleBar
 import com.example.livegoldai.theme.*
 import java.util.Locale
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.roundToInt
 
 @Composable
 fun ProCandleChart(
     candles: List<CandleBar>,
+    buyerSellerRatio: BuyerSellerSentiment? = null,
     modifier: Modifier = Modifier
 ) {
     if (candles.isEmpty()) return
@@ -128,6 +131,76 @@ fun ProCandleChart(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            // Real-Time Buyers vs Sellers Order Flow Pressure Bar
+            buyerSellerRatio?.let { bs ->
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = ObsidianSurfaceElevated.copy(alpha = 0.85f),
+                    border = CardDefaults.outlinedCardBorder().copy(
+                        brush = Brush.linearGradient(listOf(SignalBuy.copy(alpha = 0.45f), SignalSell.copy(alpha = 0.45f)))
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(SignalBuy))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "BUYERS ${bs.buyersPercent}%",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                                    fontWeight = FontWeight.Black,
+                                    color = SignalBuy
+                                )
+                            }
+                            Text(
+                                text = if (bs.buyersPercent >= bs.sellersPercent) "BULLS IN CONTROL 🟢" else "BEARS IN CONTROL 🔴",
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                fontWeight = FontWeight.Bold,
+                                color = if (bs.buyersPercent >= bs.sellersPercent) SignalBuy else SignalSell
+                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "${bs.sellersPercent}% SELLERS",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                                    fontWeight = FontWeight.Black,
+                                    color = SignalSell
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(SignalSell))
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(5.dp))
+                        // Dual color tug-of-war pressure bar
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(5.dp)
+                                .clip(RoundedCornerShape(3.dp))
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .weight(bs.buyersPercent.toFloat().coerceAtLeast(1f))
+                                    .fillMaxHeight()
+                                    .background(SignalBuy)
+                            )
+                            Spacer(modifier = Modifier.width(2.dp))
+                            Box(
+                                modifier = Modifier
+                                    .weight(bs.sellersPercent.toFloat().coerceAtLeast(1f))
+                                    .fillMaxHeight()
+                                    .background(SignalSell)
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(6.dp))
+            }
+
             // Dynamic Inspector Bar (HUD)
             if (activeCandle != null) {
                 val isBull = activeCandle.close >= activeCandle.open
@@ -164,10 +237,15 @@ fun ProCandleChart(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
+                            val candleBuyV = activeCandle.buyVolume ?: ((activeCandle.volume ?: 1000.0) * (if (isBull) 0.60 else 0.40))
+                            val candleTotalV = (activeCandle.volume ?: 1000.0).coerceAtLeast(1.0)
+                            val candleBuyPct = ((candleBuyV / candleTotalV) * 100).roundToInt().coerceIn(10, 90)
+
                             HudItem(label = "O", value = String.format(Locale.US, "%.1f", activeCandle.open))
                             HudItem(label = "H", value = String.format(Locale.US, "%.1f", activeCandle.high))
                             HudItem(label = "L", value = String.format(Locale.US, "%.1f", activeCandle.low))
                             HudItem(label = "C", value = String.format(Locale.US, "%.1f", activeCandle.close), color = if (isBull) SignalBuy else SignalSell)
+                            HudItem(label = "B/S", value = "${candleBuyPct}/${100 - candleBuyPct}%", color = if (candleBuyPct >= 50) SignalBuy else SignalSell)
                             activeCandle.vwap?.let {
                                 HudItem(label = "VWAP", value = String.format(Locale.US, "%.1f", it), color = Color(0xFFFF9100))
                             }
@@ -244,20 +322,33 @@ fun ProCandleChart(
                         return ((maxPrice - p) / priceSpan * h).toFloat().coerceIn(0f, h)
                     }
 
-                    // Draw Volume Bars at bottom if enabled
+                    // Draw Volume Bars at bottom if enabled (Buyer Green + Seller Red stacked)
                     if (showVolume) {
                         val maxVolHeight = h * 0.22f
                         displayCandles.forEachIndexed { i, candle ->
                             val vol = candle.volume ?: 500.0
-                            val barH = ((vol / maxVolume) * maxVolHeight).toFloat().coerceIn(2f, maxVolHeight)
-                            val centerX = (i * slotWidth) + (slotWidth / 2f)
                             val isBull = candle.close >= candle.open
-                            val volColor = if (isBull) SignalBuy.copy(alpha = 0.25f) else SignalSell.copy(alpha = 0.25f)
+                            val buyVol = candle.buyVolume ?: (vol * (if (isBull) 0.60 else 0.40))
+                            val barH = ((vol / maxVolume) * maxVolHeight).toFloat().coerceIn(2f, maxVolHeight)
+                            val buyH = (((buyVol / maxVolume) * maxVolHeight).toFloat()).coerceIn(1f, barH)
+                            val sellH = (barH - buyH).coerceAtLeast(0f)
+                            val centerX = (i * slotWidth) + (slotWidth / 2f)
+                            val leftX = centerX - (candleWidth / 2f)
+
+                            // Buyer volume portion (bottom green)
                             drawRect(
-                                color = volColor,
-                                topLeft = Offset(centerX - (candleWidth / 2f), h - barH),
-                                size = Size(candleWidth, barH)
+                                color = SignalBuy.copy(alpha = 0.50f),
+                                topLeft = Offset(leftX, h - buyH),
+                                size = Size(candleWidth, buyH)
                             )
+                            // Seller volume portion (stacked red above buyer portion)
+                            if (sellH > 0f) {
+                                drawRect(
+                                    color = SignalSell.copy(alpha = 0.50f),
+                                    topLeft = Offset(leftX, h - barH),
+                                    size = Size(candleWidth, sellH)
+                                )
+                            }
                         }
                     }
 

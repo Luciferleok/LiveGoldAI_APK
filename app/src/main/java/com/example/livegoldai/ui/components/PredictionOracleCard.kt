@@ -31,7 +31,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.livegoldai.R
 import com.example.livegoldai.model.NextPredictionPlaybook
+import com.example.livegoldai.model.PredictionOutcomeStatus
 import com.example.livegoldai.model.Signal
+import com.example.livegoldai.model.TimeframeAccuracyAudit
 import com.example.livegoldai.theme.*
 
 @Composable
@@ -40,6 +42,7 @@ fun PredictionOracleCard(
     onOpenCalculator: () -> Unit = {},
     logoRes: Int = R.drawable.ic_luxury_gold_logo,
     onLogoClick: () -> Unit = {},
+    timeframeAudit: TimeframeAccuracyAudit? = null,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -152,6 +155,60 @@ fun PredictionOracleCard(
                         color = signalColor,
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                     )
+                }
+            }
+
+            // Timeframe Accuracy & Last Prediction Result Strip
+            timeframeAudit?.let { audit ->
+                Spacer(modifier = Modifier.height(10.dp))
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = ObsidianSurfaceElevated,
+                    border = CardDefaults.outlinedCardBorder().copy(
+                        brush = Brush.linearGradient(listOf(GoldPrimary.copy(alpha = 0.5f), ObsidianBorder))
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Verified,
+                                contentDescription = null,
+                                tint = SignalBuy,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "${audit.timeframe}: ${audit.winRatePercent}% ACCURACY (${audit.winCount}W/${audit.lossCount}L)",
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                fontWeight = FontWeight.Black,
+                                color = GoldLight
+                            )
+                        }
+
+                        audit.lastPredictionOutcome?.let { last ->
+                            val isWin = last.outcomeStatus == PredictionOutcomeStatus.TP1_HIT ||
+                                    last.outcomeStatus == PredictionOutcomeStatus.TP2_HIT
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = (if (isWin) SignalBuy else SignalSell).copy(alpha = 0.18f)
+                            ) {
+                                Text(
+                                    text = if (isWin) "Last: TP Hit 🟢" else "Last: SL Hit 🔴",
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isWin) SignalBuy else SignalSell
+                                )
+                            }
+                        }
+                    }
                 }
             }
 

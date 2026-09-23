@@ -293,6 +293,130 @@ fun PriceHeaderCard(
                 )
             }
 
+            // Real-Time Buy vs Sell Ratio Live Snapshot (Kitna Buy ho raha hai vs Kitna Sell)
+            analysis.buyerSellerRatio?.let { bs ->
+                Spacer(modifier = Modifier.height(14.dp))
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = ObsidianSurfaceElevated,
+                    border = CardDefaults.outlinedCardBorder().copy(
+                        brush = Brush.linearGradient(listOf(SignalBuy.copy(alpha = 0.5f), SignalSell.copy(alpha = 0.5f)))
+                    ),
+                    modifier = Modifier.fillMaxWidth().testTag("live_buy_sell_strip")
+                ) {
+                    Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(SignalBuy))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Column {
+                                    Text(
+                                        text = "BUY: ${bs.buyersPercent}%",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Black,
+                                        color = SignalBuy,
+                                        fontSize = 12.sp
+                                    )
+                                    Text(
+                                        text = "खरीदारी (${String.format(Locale.US, "%,d", bs.orderBookBidCount)} Bids)",
+                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                        color = TextSecondary
+                                    )
+                                }
+                            }
+
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = (if (bs.buyersPercent >= bs.sellersPercent) SignalBuy else SignalSell).copy(alpha = 0.2f),
+                                border = CardDefaults.outlinedCardBorder().copy(
+                                    brush = Brush.linearGradient(
+                                        listOf(
+                                            if (bs.buyersPercent >= bs.sellersPercent) SignalBuy else SignalSell,
+                                            Color.Transparent
+                                        )
+                                    )
+                                )
+                            ) {
+                                Text(
+                                    text = if (bs.buyersPercent >= bs.sellersPercent) "🟢 BULLS HEAVY" else "🔴 BEARS HEAVY",
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                    fontWeight = FontWeight.Black,
+                                    color = if (bs.buyersPercent >= bs.sellersPercent) SignalBuy else SignalSell
+                                )
+                            }
+
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Column(horizontalAlignment = Alignment.End) {
+                                    Text(
+                                        text = "SELL: ${bs.sellersPercent}%",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Black,
+                                        color = SignalSell,
+                                        fontSize = 12.sp
+                                    )
+                                    Text(
+                                        text = "बिकवाली (${String.format(Locale.US, "%,d", bs.orderBookAskCount)} Asks)",
+                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                        color = TextSecondary
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(SignalSell))
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        // Dual Color Tug-of-war Bar
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(8.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(ObsidianBackground)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .weight(bs.buyersPercent.toFloat().coerceAtLeast(1f))
+                                    .fillMaxHeight()
+                                    .background(SignalBuy)
+                            )
+                            Spacer(modifier = Modifier.width(2.dp))
+                            Box(
+                                modifier = Modifier
+                                    .weight(bs.sellersPercent.toFloat().coerceAtLeast(1f))
+                                    .fillMaxHeight()
+                                    .background(SignalSell)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "Live Order Flow Balance",
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                color = TextMuted
+                            )
+                            Text(
+                                text = "Net Delta: ${if (bs.netVolumeDelta >= 0) "+" else ""}${String.format(Locale.US, "%,.0f", bs.netVolumeDelta)} Lots",
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                fontWeight = FontWeight.Bold,
+                                color = if (bs.buyersPercent >= bs.sellersPercent) SignalBuy else SignalSell
+                            )
+                        }
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(16.dp))
 
             // Timeframe selection chips (5m, 10m, 15m, 30m, 45m, 1h, 2h, 3h, 4h, 6h, 1day)

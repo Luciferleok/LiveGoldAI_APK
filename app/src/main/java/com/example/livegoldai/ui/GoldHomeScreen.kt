@@ -387,9 +387,32 @@ fun GoldHomeScreen(
                             )
                         }
 
+                        // 2.5 Real-Time Buyers vs Sellers Order Flow Card (Kharidari vs Bikwali Live Tape)
+                        analysis.buyerSellerRatio?.let { bs ->
+                            item(key = "main_buyer_seller_card") {
+                                BuyerSellerDepthCard(
+                                    sentiment = bs,
+                                    currentPrice = analysis.currentPrice
+                                )
+                            }
+                        }
+
+                        // 2.8 Timeframe Prediction Accuracy & AI Self-Correction Audit Card (Kitna Sahi / Galat & Galti Sudhar)
+                        analysis.timeframeAudit?.let { audit ->
+                            item(key = "main_timeframe_accuracy_audit_card") {
+                                PredictionAccuracyAuditCard(
+                                    audit = audit,
+                                    selectedInterval = uiState.selectedInterval
+                                )
+                            }
+                        }
+
                         // 3. Live Professional Candlestick Chart
                         item(key = "main_pro_chart") {
-                            ProCandleChart(candles = analysis.recentCandles)
+                            ProCandleChart(
+                                candles = analysis.recentCandles,
+                                buyerSellerRatio = analysis.buyerSellerRatio
+                            )
                         }
 
                         // 4. Live Global Market Sessions
