@@ -5,3 +5,8 @@ bin/
 __pycache__/
 *.pyc
 .last_signal
+.gradle/
+build/
+app/build/
+.kotlin/
+*.bin
