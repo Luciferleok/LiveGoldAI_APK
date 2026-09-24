@@ -27,6 +27,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.livegoldai.localization.AppLanguage
+import com.example.livegoldai.localization.LocalAppLanguage
 import com.example.livegoldai.model.BuyerSellerSentiment
 import com.example.livegoldai.model.Signal
 import com.example.livegoldai.theme.*
@@ -41,6 +43,7 @@ fun BuyerSellerDepthCard(
 ) {
     if (sentiment == null) return
 
+    val currentLanguage = LocalAppLanguage.current
     val isBullsDominant = sentiment.buyersPercent >= sentiment.sellersPercent
     val dominantColor = if (isBullsDominant) SignalBuy else SignalSell
 
@@ -110,7 +113,11 @@ fun BuyerSellerDepthCard(
                                 color = dominantColor.copy(alpha = 0.2f)
                             ) {
                                 Text(
-                                    text = "लाइव खरीदारी vs बिकवाली",
+                                    text = when (currentLanguage) {
+                                        AppLanguage.ENGLISH -> "LIVE ORDER FLOW"
+                                        AppLanguage.HINDI -> "लाइव खरीदारी vs बिकवाली"
+                                        AppLanguage.MARATHI -> "लाईव्ह खरेदीदार विरुद्ध विक्रेते"
+                                    },
                                     modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
                                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
                                     fontWeight = FontWeight.Bold,
@@ -119,7 +126,11 @@ fun BuyerSellerDepthCard(
                             }
                         }
                         Text(
-                            text = "Real-Time Order Flow: Kitna Buy ho raha hai vs Kitna Sell",
+                            text = when (currentLanguage) {
+                                AppLanguage.ENGLISH -> "Real-Time Order Flow: Live Buying vs Selling Volume"
+                                AppLanguage.HINDI -> "रियल-टाइम ऑर्डर फ्लो: कितना Buy हो रहा है vs कितना Sell"
+                                AppLanguage.MARATHI -> "रिअल-टाइम ऑर्डर फ्लो: किती खरेदी होत आहे विरुद्ध किती विक्री"
+                            },
                             style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
                             color = TextSecondary
                         )

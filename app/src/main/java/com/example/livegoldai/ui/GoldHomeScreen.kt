@@ -36,6 +36,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.livegoldai.R
+import com.example.livegoldai.localization.AppLanguage
+import com.example.livegoldai.localization.LocalizationStrings
 import com.example.livegoldai.theme.*
 import com.example.livegoldai.ui.components.*
 import java.util.Locale
@@ -53,6 +55,8 @@ fun GoldHomeScreen(
     if (showSettings) {
         SettingsDialog(
             currentApiKey = uiState.apiKey,
+            currentLanguage = uiState.language,
+            onSelectLanguage = { lang -> viewModel.selectLanguage(lang) },
             onSaveKey = { newKey -> viewModel.updateApiKey(newKey) },
             onOpenLogoGallery = { viewModel.openLogoSelector() },
             onOpenThemeSelector = { viewModel.openThemeSelector() },
@@ -154,7 +158,11 @@ fun GoldHomeScreen(
                                 )
                             }
                             Text(
-                                text = "VIP BULLION TERMINAL • By Rudvay Ujjwal Kalankar",
+                                text = when (uiState.language) {
+                                    com.example.livegoldai.localization.AppLanguage.ENGLISH -> "VIP BULLION TERMINAL • By Rudvay Ujjwal Kalankar"
+                                    com.example.livegoldai.localization.AppLanguage.HINDI -> "VIP बुलियन टर्मिनल • रुद्वय उज्ज्वल कलणकर"
+                                    com.example.livegoldai.localization.AppLanguage.MARATHI -> "VIP बुलियन टर्मिनल • रुद्वय उज्ज्वल काळणकर"
+                                },
                                 style = MaterialTheme.typography.bodyMedium.copy(fontSize = 10.sp),
                                 color = appColors.primaryGold,
                                 fontWeight = FontWeight.SemiBold
@@ -238,6 +246,31 @@ fun GoldHomeScreen(
                         }
                     }
 
+                    // Language Quick Pill (English 🇬🇧, Hindi 🇮🇳, Marathi 🚩)
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = appColors.primaryGold.copy(alpha = 0.18f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, appColors.lightGold.copy(alpha = 0.7f)),
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .clickable { showSettings = true }
+                            .testTag("top_language_pill")
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 5.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(text = uiState.language.flag, fontSize = 12.sp)
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text(
+                                text = uiState.language.nativeName,
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Black,
+                                color = appColors.primaryGold
+                            )
+                        }
+                    }
+
                     IconButton(
                         onClick = { viewModel.loadData(isInitial = false) },
                         modifier = Modifier.testTag("top_refresh_button")
@@ -283,7 +316,7 @@ fun GoldHomeScreen(
                             CircularProgressIndicator(color = GoldPrimary)
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
-                                text = "Analyzing XAU/USD technical indicators...",
+                                text = LocalizationStrings.loadingLiveIndicators(uiState.language),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = TextSecondary
                             )
@@ -293,13 +326,29 @@ fun GoldHomeScreen(
 
                 uiState.data != null -> {
                     val analysis = uiState.data!!
-                    val tabs = listOf(
-                        "🕯️ CANDLE & MTF",
-                        "🏦 SMART MONEY SMC",
-                        "🌍 MACRO & NEWS",
-                        "🎯 PIVOT LADDER",
-                        "⚡ PRO TRICKS"
-                    )
+                    val tabs = when (uiState.language) {
+                        com.example.livegoldai.localization.AppLanguage.ENGLISH -> listOf(
+                            "🕯️ CANDLE & MTF",
+                            "🏦 SMART MONEY SMC",
+                            "🌍 MACRO & NEWS",
+                            "🎯 PIVOT LADDER",
+                            "⚡ PRO TRICKS"
+                        )
+                        com.example.livegoldai.localization.AppLanguage.HINDI -> listOf(
+                            "🕯️ कैंडल और MTF",
+                            "🏦 स्मार्ट मनी SMC",
+                            "🌍 मैक्रो और न्यूज़",
+                            "🎯 पिवट लैडर",
+                            "⚡ प्रो ट्रिक्स"
+                        )
+                        com.example.livegoldai.localization.AppLanguage.MARATHI -> listOf(
+                            "🕯️ कँडल आणि MTF",
+                            "🏦 स्मार्ट मनी SMC",
+                            "🌍 मॅक्रो आणि बातम्या",
+                            "🎯 पिव्हट लॅडर",
+                            "⚡ प्रो ट्रिक्स"
+                        )
+                    }
 
                     LazyColumn(
                         modifier = Modifier
@@ -438,7 +487,7 @@ fun GoldHomeScreen(
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        text = "DEEP-DIVE MARKET INTELLIGENCE",
+                                        text = LocalizationStrings.deepDiveIntelligence(uiState.language),
                                         style = MaterialTheme.typography.labelMedium,
                                         fontWeight = FontWeight.Black,
                                         color = GoldLight,
@@ -446,7 +495,7 @@ fun GoldHomeScreen(
                                     )
                                 }
                                 Text(
-                                    text = "5 Pro Modules",
+                                    text = LocalizationStrings.proModulesCount(uiState.language),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = TextMuted,
                                     fontSize = 10.sp
@@ -560,13 +609,13 @@ fun GoldHomeScreen(
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "Dedicated to Mr. Rudvay Ujjwal Kalankar",
+                                    text = LocalizationStrings.dedicatedTo(uiState.language),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = TextSecondary
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "Experimental analysis engine • Not financial advice",
+                                    text = LocalizationStrings.disclaimer(uiState.language),
                                     style = MaterialTheme.typography.bodyMedium.copy(fontSize = 11.sp),
                                     color = TextMuted
                                 )
@@ -585,7 +634,7 @@ fun GoldHomeScreen(
                             modifier = Modifier.padding(24.dp)
                         ) {
                             Text(
-                                text = "Unable to load live analysis",
+                                text = LocalizationStrings.errorLoading(uiState.language),
                                 style = MaterialTheme.typography.titleMedium,
                                 color = SignalSell
                             )
@@ -600,7 +649,7 @@ fun GoldHomeScreen(
                                 onClick = { viewModel.loadData(isInitial = true) },
                                 colors = ButtonDefaults.buttonColors(containerColor = GoldPrimary)
                             ) {
-                                Text(text = "Try Again", color = ObsidianBackground)
+                                Text(text = LocalizationStrings.tryAgain(uiState.language), color = ObsidianBackground)
                             }
                         }
                     }

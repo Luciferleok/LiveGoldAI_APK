@@ -1,9 +1,12 @@
 package com.example.livegoldai.ui
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import android.content.Context
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.livegoldai.R
 import com.example.livegoldai.data.GoldApiService
+import com.example.livegoldai.localization.AppLanguage
 import com.example.livegoldai.model.GoldAnalysisResult
 import com.example.livegoldai.theme.ThemeMode
 import kotlinx.coroutines.Job
@@ -42,6 +45,7 @@ enum class MainScreenMode(
 }
 
 data class GoldUiState(
+    val language: AppLanguage = AppLanguage.HINDI,
     val isLoading: Boolean = true,
     val isRefreshing: Boolean = false,
     val data: GoldAnalysisResult? = null,
@@ -64,11 +68,18 @@ data class GoldUiState(
     val showPredictionDialog: Boolean = false
 )
 
-class GoldViewModel(
+class GoldViewModel @JvmOverloads constructor(
+    application: Application,
     private val apiService: GoldApiService = GoldApiService()
-) : ViewModel() {
+) : AndroidViewModel(application) {
 
-    private val _uiState = MutableStateFlow(GoldUiState())
+    private val prefs = application.getSharedPreferences("kalankar_gold_prefs", Context.MODE_PRIVATE)
+
+    private val _uiState = MutableStateFlow(
+        GoldUiState(
+            language = AppLanguage.fromCode(prefs.getString("selected_app_language", "hi"))
+        )
+    )
     val uiState: StateFlow<GoldUiState> = _uiState.asStateFlow()
 
     private var autoRefreshJob: Job? = null
@@ -76,6 +87,11 @@ class GoldViewModel(
     init {
         loadData(isInitial = true)
         startAutoRefreshLoop()
+    }
+
+    fun selectLanguage(language: AppLanguage) {
+        prefs.edit().putString("selected_app_language", language.code).apply()
+        _uiState.update { it.copy(language = language) }
     }
 
     fun loadData(isInitial: Boolean = false) {

@@ -19,6 +19,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.livegoldai.localization.AppLanguage
+import com.example.livegoldai.localization.LocalAppLanguage
+import com.example.livegoldai.localization.LocalizationStrings
 import com.example.livegoldai.model.EconomicEvent
 import com.example.livegoldai.model.MacroSentimentRadar
 import com.example.livegoldai.model.Signal
@@ -31,6 +34,8 @@ fun MacroNewsRadarCard(
     radar: MacroSentimentRadar,
     modifier: Modifier = Modifier
 ) {
+    val currentLanguage = LocalAppLanguage.current
+
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -63,7 +68,11 @@ fun MacroNewsRadarCard(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "MACRO & NEWS SENTIMENT RADAR",
+                        text = when (currentLanguage) {
+                            AppLanguage.ENGLISH -> "MACRO & NEWS SENTIMENT RADAR"
+                            AppLanguage.HINDI -> "मैक्रो और न्यूज़ सेंटिमेंट रडार"
+                            AppLanguage.MARATHI -> "मॅक्रो व न्यूज सेंटिमेंट रडार"
+                        },
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Black,
                         color = GoldLight,
@@ -79,8 +88,25 @@ fun MacroNewsRadarCard(
                         Signal.WAIT -> AmberWarning.copy(alpha = 0.18f)
                     }
                 ) {
+                    val flowText = when (radar.overallBias) {
+                        Signal.BUY -> when (currentLanguage) {
+                            AppLanguage.ENGLISH -> "${radar.sentimentScorePercent}% BULLISH FLOW"
+                            AppLanguage.HINDI -> "${radar.sentimentScorePercent}% तेजी का बहाव"
+                            AppLanguage.MARATHI -> "${radar.sentimentScorePercent}% तेजीचा प्रवाह"
+                        }
+                        Signal.SELL -> when (currentLanguage) {
+                            AppLanguage.ENGLISH -> "${radar.sentimentScorePercent}% BEARISH FLOW"
+                            AppLanguage.HINDI -> "${radar.sentimentScorePercent}% मंदी का बहाव"
+                            AppLanguage.MARATHI -> "${radar.sentimentScorePercent}% मंदीचा प्रवाह"
+                        }
+                        Signal.WAIT -> when (currentLanguage) {
+                            AppLanguage.ENGLISH -> "${radar.sentimentScorePercent}% NEUTRAL FLOW"
+                            AppLanguage.HINDI -> "${radar.sentimentScorePercent}% न्यूट्रल बहाव"
+                            AppLanguage.MARATHI -> "${radar.sentimentScorePercent}% तटस्थ प्रवाह"
+                        }
+                    }
                     Text(
-                        text = "${radar.sentimentScorePercent}% BULLISH FLOW",
+                        text = flowText,
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.ExtraBold,
                         color = when (radar.overallBias) {
@@ -95,7 +121,7 @@ fun MacroNewsRadarCard(
 
             Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text = radar.summaryInsight,
+                text = LocalizationStrings.translateReason(radar.summaryInsight, currentLanguage),
                 style = MaterialTheme.typography.bodySmall,
                 color = TextSecondary
             )
@@ -158,7 +184,19 @@ fun MacroNewsRadarCard(
                         }
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = if (radar.dxyIndex.impactOnGold == Signal.BUY) "Tailwind (Bullish Gold)" else "Headwind (Bearish Gold)",
+                            text = if (radar.dxyIndex.impactOnGold == Signal.BUY) {
+                                when (currentLanguage) {
+                                    AppLanguage.ENGLISH -> "Tailwind (Bullish Gold)"
+                                    AppLanguage.HINDI -> "अनुकूल (सोने में तेजी)"
+                                    AppLanguage.MARATHI -> "अनुकूल (सोन्यात तेजी)"
+                                }
+                            } else {
+                                when (currentLanguage) {
+                                    AppLanguage.ENGLISH -> "Headwind (Bearish Gold)"
+                                    AppLanguage.HINDI -> "प्रतिकूल (सोने में मंदी)"
+                                    AppLanguage.MARATHI -> "प्रतिकूल (सोन्यात मंदी)"
+                                }
+                            },
                             style = MaterialTheme.typography.labelSmall,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.ExtraBold,
@@ -218,7 +256,19 @@ fun MacroNewsRadarCard(
                         }
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = if (radar.us10yYield.impactOnGold == Signal.BUY) "Yields falling (Bullish)" else "Yields rising (Bearish)",
+                            text = if (radar.us10yYield.impactOnGold == Signal.BUY) {
+                                when (currentLanguage) {
+                                    AppLanguage.ENGLISH -> "Yields falling (Bullish)"
+                                    AppLanguage.HINDI -> "यील्ड गिर रही है (तेजी)"
+                                    AppLanguage.MARATHI -> "यील्ड घसरत आहे (तेजी)"
+                                }
+                            } else {
+                                when (currentLanguage) {
+                                    AppLanguage.ENGLISH -> "Yields rising (Bearish)"
+                                    AppLanguage.HINDI -> "यील्ड बढ़ रही है (मंदी)"
+                                    AppLanguage.MARATHI -> "यील्ड वाढत आहे (मंदी)"
+                                }
+                            },
                             style = MaterialTheme.typography.labelSmall,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.ExtraBold,
@@ -232,7 +282,11 @@ fun MacroNewsRadarCard(
 
             // High Impact USD Economic Calendar Feed
             Text(
-                text = "UPCOMING HIGH-IMPACT ECONOMIC EVENTS (USD)",
+                text = when (currentLanguage) {
+                    AppLanguage.ENGLISH -> "UPCOMING HIGH-IMPACT ECONOMIC EVENTS (USD)"
+                    AppLanguage.HINDI -> "आगामी हाई-इम्पैक्ट आर्थिक इवेंट्स (USD)"
+                    AppLanguage.MARATHI -> "पुढील महत्त्वाच्या आर्थिक घडामोडी (USD)"
+                },
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Black,
                 color = GoldLight,
@@ -250,7 +304,11 @@ fun MacroNewsRadarCard(
 
             // Fundamental Catalysts Feed
             Text(
-                text = "KEY STRUCTURAL GOLD DRIVERS",
+                text = when (currentLanguage) {
+                    AppLanguage.ENGLISH -> "KEY STRUCTURAL GOLD DRIVERS"
+                    AppLanguage.HINDI -> "सोने के मुख्य फंडामेंटल फैक्टर्स"
+                    AppLanguage.MARATHI -> "सोन्यावरील मुख्य मूलभूत घटक"
+                },
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Black,
                 color = GoldLight,
@@ -297,14 +355,14 @@ fun MacroNewsRadarCard(
                         }
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = item.headline,
+                            text = LocalizationStrings.translateReason(item.headline, currentLanguage),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = item.reason,
+                            text = LocalizationStrings.translateReason(item.reason, currentLanguage),
                             style = MaterialTheme.typography.bodySmall,
                             color = TextSecondary
                         )

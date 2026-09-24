@@ -21,6 +21,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.livegoldai.localization.AppLanguage
+import com.example.livegoldai.localization.LocalAppLanguage
 import com.example.livegoldai.model.GroupAnalysis
 import com.example.livegoldai.model.IndicatorItem
 import com.example.livegoldai.model.Signal
@@ -31,6 +33,7 @@ fun IndicatorGroupCard(
     group: GroupAnalysis,
     modifier: Modifier = Modifier
 ) {
+    val currentLanguage = LocalAppLanguage.current
     val verdictColor = when (group.verdict) {
         Signal.BUY -> SignalBuy
         Signal.SELL -> SignalSell
@@ -41,6 +44,53 @@ fun IndicatorGroupCard(
         Signal.BUY -> SignalBuyContainer
         Signal.SELL -> SignalSellContainer
         Signal.WAIT -> SignalWaitContainer
+    }
+
+    val localizedGroupTitle = when (group.key.lowercase()) {
+        "trend" -> when (currentLanguage) {
+            AppLanguage.ENGLISH -> "TREND & MOMENTUM"
+            AppLanguage.HINDI -> "ट्रेंड मोमेंटम (ट्रेंड की दिशा)"
+            AppLanguage.MARATHI -> "ट्रेंड मोमेंटम (दिशा व वेग)"
+        }
+        "smart_money", "smc" -> when (currentLanguage) {
+            AppLanguage.ENGLISH -> "SMART MONEY & LIQUIDITY"
+            AppLanguage.HINDI -> "स्मार्ट मनी व लिक्विडिटी"
+            AppLanguage.MARATHI -> "स्मार्ट मनी व लिक्विडीटी"
+        }
+        "volatility" -> when (currentLanguage) {
+            AppLanguage.ENGLISH -> "VOLATILITY & BREAKOUT"
+            AppLanguage.HINDI -> "वोलैटिलिटी व ब्रेकआउट"
+            AppLanguage.MARATHI -> "व्होलॅटिलिटी व ब्रेकआऊट"
+        }
+        "volume", "order_flow" -> when (currentLanguage) {
+            AppLanguage.ENGLISH -> "VOLUME & ORDER FLOW"
+            AppLanguage.HINDI -> "वॉल्यूम व ऑर्डर फ्लो"
+            AppLanguage.MARATHI -> "व्हॉल्यूम व ऑर्डर फ्लो"
+        }
+        "levels", "sr" -> when (currentLanguage) {
+            AppLanguage.ENGLISH -> "SUPPORT & RESISTANCE"
+            AppLanguage.HINDI -> "सपोर्ट और रेजिस्टेंस लेवल्स"
+            AppLanguage.MARATHI -> "सपोर्ट आणि रेझिस्टन्स लेव्हल्स"
+        }
+        else -> group.title.uppercase()
+    }
+
+    val localizedVerdict = when (group.verdict) {
+        Signal.BUY -> when (currentLanguage) {
+            AppLanguage.ENGLISH -> "BUY"
+            AppLanguage.HINDI -> "BUY (खरीद)"
+            AppLanguage.MARATHI -> "BUY (खरेदी)"
+        }
+        Signal.SELL -> when (currentLanguage) {
+            AppLanguage.ENGLISH -> "SELL"
+            AppLanguage.HINDI -> "SELL (बिक्री)"
+            AppLanguage.MARATHI -> "SELL (विक्री)"
+        }
+        Signal.WAIT -> when (currentLanguage) {
+            AppLanguage.ENGLISH -> "WAIT"
+            AppLanguage.HINDI -> "WAIT (इंतज़ार)"
+            AppLanguage.MARATHI -> "WAIT (वाट)"
+        }
     }
 
     Card(
@@ -79,7 +129,7 @@ fun IndicatorGroupCard(
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = group.title.uppercase(),
+                        text = localizedGroupTitle,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = TextPrimary,
@@ -110,7 +160,7 @@ fun IndicatorGroupCard(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = group.verdict.name,
+                            text = localizedVerdict,
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Black,
                             color = verdictColor
@@ -123,7 +173,7 @@ fun IndicatorGroupCard(
 
             // Indicator Rows
             group.indicators.forEachIndexed { index, indicator ->
-                IndicatorRowItem(indicator = indicator)
+                IndicatorRowItem(indicator = indicator, currentLanguage = currentLanguage)
                 if (index < group.indicators.size - 1) {
                     HorizontalDivider(
                         color = ObsidianBorder.copy(alpha = 0.5f),
@@ -138,12 +188,31 @@ fun IndicatorGroupCard(
 
 @Composable
 private fun IndicatorRowItem(
-    indicator: IndicatorItem
+    indicator: IndicatorItem,
+    currentLanguage: AppLanguage
 ) {
     val sigColor = when (indicator.signal) {
         Signal.BUY -> SignalBuy
         Signal.SELL -> SignalSell
         Signal.WAIT -> SignalWait
+    }
+
+    val localizedSignal = when (indicator.signal) {
+        Signal.BUY -> when (currentLanguage) {
+            AppLanguage.ENGLISH -> "BUY"
+            AppLanguage.HINDI -> "BUY"
+            AppLanguage.MARATHI -> "BUY"
+        }
+        Signal.SELL -> when (currentLanguage) {
+            AppLanguage.ENGLISH -> "SELL"
+            AppLanguage.HINDI -> "SELL"
+            AppLanguage.MARATHI -> "SELL"
+        }
+        Signal.WAIT -> when (currentLanguage) {
+            AppLanguage.ENGLISH -> "WAIT"
+            AppLanguage.HINDI -> "WAIT"
+            AppLanguage.MARATHI -> "WAIT"
+        }
     }
 
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -167,7 +236,7 @@ private fun IndicatorRowItem(
                 )
             ) {
                 Text(
-                    text = indicator.signal.name,
+                    text = localizedSignal,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                     style = MaterialTheme.typography.labelMedium.copy(fontSize = 11.sp),
                     fontWeight = FontWeight.Bold,

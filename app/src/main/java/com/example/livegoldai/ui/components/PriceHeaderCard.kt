@@ -31,6 +31,9 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.livegoldai.localization.AppLanguage
+import com.example.livegoldai.localization.LocalAppLanguage
+import com.example.livegoldai.localization.LocalizationStrings
 import com.example.livegoldai.model.GoldAnalysisResult
 import com.example.livegoldai.theme.*
 import java.util.Locale
@@ -48,6 +51,7 @@ fun PriceHeaderCard(
     onAlertClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val currentLanguage = LocalAppLanguage.current
     val isPositive = analysis.changeAmount >= 0
     val changeColor = if (isPositive) SignalBuy else SignalSell
 
@@ -269,12 +273,12 @@ fun PriceHeaderCard(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = "Low: $${String.format(Locale.US, "%,.2f", analysis.low24h)}",
+                        text = "${LocalizationStrings.low24h(currentLanguage)}: $${String.format(Locale.US, "%,.2f", analysis.low24h)}",
                         style = MaterialTheme.typography.labelMedium,
                         color = TextMuted
                     )
                     Text(
-                        text = "High: $${String.format(Locale.US, "%,.2f", analysis.high24h)}",
+                        text = "${LocalizationStrings.high24h(currentLanguage)}: $${String.format(Locale.US, "%,.2f", analysis.high24h)}",
                         style = MaterialTheme.typography.labelMedium,
                         color = TextMuted
                     )
@@ -322,7 +326,11 @@ fun PriceHeaderCard(
                                         fontSize = 12.sp
                                     )
                                     Text(
-                                        text = "खरीदारी (${String.format(Locale.US, "%,d", bs.orderBookBidCount)} Bids)",
+                                        text = when (currentLanguage) {
+                                            AppLanguage.ENGLISH -> "Buyers (${String.format(Locale.US, "%,d", bs.orderBookBidCount)} Bids)"
+                                            AppLanguage.HINDI -> "खरीदारी (${String.format(Locale.US, "%,d", bs.orderBookBidCount)} Bids)"
+                                            AppLanguage.MARATHI -> "खरेदीदार (${String.format(Locale.US, "%,d", bs.orderBookBidCount)} Bids)"
+                                        },
                                         style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
                                         color = TextSecondary
                                     )
@@ -342,7 +350,19 @@ fun PriceHeaderCard(
                                 )
                             ) {
                                 Text(
-                                    text = if (bs.buyersPercent >= bs.sellersPercent) "🟢 BULLS HEAVY" else "🔴 BEARS HEAVY",
+                                    text = if (bs.buyersPercent >= bs.sellersPercent) {
+                                        when (currentLanguage) {
+                                            AppLanguage.ENGLISH -> "🟢 BULLS DOMINANT"
+                                            AppLanguage.HINDI -> "🟢 खरीदार भारी"
+                                            AppLanguage.MARATHI -> "🟢 खरेदीदार वरचढ"
+                                        }
+                                    } else {
+                                        when (currentLanguage) {
+                                            AppLanguage.ENGLISH -> "🔴 BEARS DOMINANT"
+                                            AppLanguage.HINDI -> "🔴 विक्रेता भारी"
+                                            AppLanguage.MARATHI -> "🔴 विक्रेते वरचढ"
+                                        }
+                                    },
                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
                                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
                                     fontWeight = FontWeight.Black,
@@ -360,7 +380,11 @@ fun PriceHeaderCard(
                                         fontSize = 12.sp
                                     )
                                     Text(
-                                        text = "बिकवाली (${String.format(Locale.US, "%,d", bs.orderBookAskCount)} Asks)",
+                                        text = when (currentLanguage) {
+                                            AppLanguage.ENGLISH -> "Sellers (${String.format(Locale.US, "%,d", bs.orderBookAskCount)} Asks)"
+                                            AppLanguage.HINDI -> "बिकवाली (${String.format(Locale.US, "%,d", bs.orderBookAskCount)} Asks)"
+                                            AppLanguage.MARATHI -> "विक्रेते (${String.format(Locale.US, "%,d", bs.orderBookAskCount)} Asks)"
+                                        },
                                         style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
                                         color = TextSecondary
                                     )
@@ -402,12 +426,16 @@ fun PriceHeaderCard(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = "Live Order Flow Balance",
+                                text = LocalizationStrings.liveOrderFlowBalance(currentLanguage),
                                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
                                 color = TextMuted
                             )
                             Text(
-                                text = "Net Delta: ${if (bs.netVolumeDelta >= 0) "+" else ""}${String.format(Locale.US, "%,.0f", bs.netVolumeDelta)} Lots",
+                                text = "${when (currentLanguage) {
+                                    AppLanguage.ENGLISH -> "Net Delta"
+                                    AppLanguage.HINDI -> "नेट डेल्टा"
+                                    AppLanguage.MARATHI -> "निव्वळ डेल्टा"
+                                }}: ${if (bs.netVolumeDelta >= 0) "+" else ""}${String.format(Locale.US, "%,.0f", bs.netVolumeDelta)} Lots",
                                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
                                 fontWeight = FontWeight.Bold,
                                 color = if (bs.buyersPercent >= bs.sellersPercent) SignalBuy else SignalSell
@@ -477,7 +505,7 @@ fun PriceHeaderCard(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        text = "Offline / Network limited • Showing cached gold stream",
+                        text = LocalizationStrings.offlineModeCached(currentLanguage),
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelMedium.copy(fontSize = 10.sp),
                         color = SignalWaitText

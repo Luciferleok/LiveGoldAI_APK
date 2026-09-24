@@ -26,6 +26,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.livegoldai.localization.AppLanguage
+import com.example.livegoldai.localization.LocalAppLanguage
+import com.example.livegoldai.localization.LocalizationStrings
 import com.example.livegoldai.model.GoldAnalysisResult
 import com.example.livegoldai.model.PredictionOutcomeStatus
 import com.example.livegoldai.model.Signal
@@ -163,32 +166,48 @@ fun PredictionBigCard(
     onOpenCalculator: (Double) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val currentLanguage = LocalAppLanguage.current
     val prediction = analysis.nextPrediction
     val verdict = prediction?.verdict ?: analysis.tradeSetup.signal
     val winProb = prediction?.winProbabilityPercent ?: analysis.tradeSetup.confidencePercent
 
-    val (verdictHindi, verdictColor, verdictBg, verdictBorder, verdictIcon) = when (verdict) {
-        Signal.BUY -> Tuple5(
-            "BUY HO SAKTA HAI (खरीदने का मौका)",
+    val (verdictColor, verdictBg, verdictBorder, verdictIcon) = when (verdict) {
+        Signal.BUY -> Tuple4(
             SignalBuy,
             SignalBuyContainer,
             SignalBuy.copy(alpha = 0.5f),
             Icons.Default.TrendingUp
         )
-        Signal.SELL -> Tuple5(
-            "SELL HO SAKTA HAI (बेचने का मौका)",
+        Signal.SELL -> Tuple4(
             SignalSell,
             SignalSellContainer,
             SignalSell.copy(alpha = 0.5f),
             Icons.Default.TrendingDown
         )
-        Signal.WAIT -> Tuple5(
-            "WAIT KARNA CHAHIYE (इंतज़ार करें)",
+        Signal.WAIT -> Tuple4(
             SignalWait,
             SignalWaitContainer,
             SignalWait.copy(alpha = 0.5f),
             Icons.Default.PauseCircle
         )
+    }
+
+    val verdictLocalized = when (verdict) {
+        Signal.BUY -> when (currentLanguage) {
+            AppLanguage.ENGLISH -> "BUY EXPECTED (Bullish Opportunity)"
+            AppLanguage.HINDI -> "BUY HO SAKTA HAI (खरीदने का मौका)"
+            AppLanguage.MARATHI -> "BUY HO SAKTO (खरेदीची सुवर्णसंधी)"
+        }
+        Signal.SELL -> when (currentLanguage) {
+            AppLanguage.ENGLISH -> "SELL EXPECTED (Bearish Opportunity)"
+            AppLanguage.HINDI -> "SELL HO SAKTA HAI (बेचने का मौका)"
+            AppLanguage.MARATHI -> "SELL HO SAKTO (विक्रीची सुवर्णसंधी)"
+        }
+        Signal.WAIT -> when (currentLanguage) {
+            AppLanguage.ENGLISH -> "WAIT PATIENTLY (Range-Bound / Neutral)"
+            AppLanguage.HINDI -> "WAIT KARNA CHAHIYE (इंतज़ार करें)"
+            AppLanguage.MARATHI -> "WAIT KARA (वाट पहा / घाई नको)"
+        }
     }
 
     val bullishProb = when (verdict) {
@@ -356,14 +375,18 @@ fun PredictionBigCard(
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "AI PREDICTION VERDICT:",
+                            text = when (currentLanguage) {
+                                AppLanguage.ENGLISH -> "AI PREDICTION VERDICT:"
+                                AppLanguage.HINDI -> "AI प्रेडिक्शन का फैसला:"
+                                AppLanguage.MARATHI -> "AI अंदाजाचा निर्णय:"
+                            },
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             color = verdictColor.copy(alpha = 0.9f),
                             fontSize = 10.sp
                         )
                         Text(
-                            text = verdictHindi,
+                            text = verdictLocalized,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Black,
                             color = TextPrimary,
@@ -705,27 +728,40 @@ fun IndicatorsOverallBigCard(
     onToggleDetail: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val currentLanguage = LocalAppLanguage.current
     val buyCount = analysis.buyCount
     val sellCount = analysis.sellCount
     val waitCount = analysis.waitCount
     val total = (buyCount + sellCount + waitCount).coerceAtLeast(1)
     val agreementPercent = analysis.agreementPercent.toInt()
 
-    val (overallHindi, overallColor, overallBg, overallBorder) = when (analysis.overallSignal) {
+    val (overallStatusText, overallColor, overallBg, overallBorder) = when (analysis.overallSignal) {
         Signal.BUY -> Tuple4(
-            "OVERALL INDICATORS: STRONG BUY 🟢",
+            when (currentLanguage) {
+                AppLanguage.ENGLISH -> "OVERALL INDICATORS: STRONG BUY 🟢"
+                AppLanguage.HINDI -> "सभी इंडिकेटर्स: मजबूत खरीदारी 🟢"
+                AppLanguage.MARATHI -> "सर्व इंडिकेटर्स: जोरदार खरेदी 🟢"
+            },
             SignalBuy,
             SignalBuyContainer,
             SignalBuy.copy(alpha = 0.5f)
         )
         Signal.SELL -> Tuple4(
-            "OVERALL INDICATORS: STRONG SELL 🔴",
+            when (currentLanguage) {
+                AppLanguage.ENGLISH -> "OVERALL INDICATORS: STRONG SELL 🔴"
+                AppLanguage.HINDI -> "सभी इंडिकेटर्स: मजबूत बिकवाली 🔴"
+                AppLanguage.MARATHI -> "सर्व इंडिकेटर्स: जोरदार विक्री 🔴"
+            },
             SignalSell,
             SignalSellContainer,
             SignalSell.copy(alpha = 0.5f)
         )
         Signal.WAIT -> Tuple4(
-            "OVERALL INDICATORS: MIXED / WAIT 🟡",
+            when (currentLanguage) {
+                AppLanguage.ENGLISH -> "OVERALL INDICATORS: MIXED / WAIT 🟡"
+                AppLanguage.HINDI -> "सभी इंडिकेटर्स: मिलाजुला / इंतज़ार 🟡"
+                AppLanguage.MARATHI -> "सर्व इंडिकेटर्स: संमिश्र / वाट पहा 🟡"
+            },
             SignalWait,
             SignalWaitContainer,
             SignalWait.copy(alpha = 0.5f)
@@ -813,14 +849,18 @@ fun IndicatorsOverallBigCard(
                     ) {
                         Column {
                             Text(
-                                text = "OVERALL KYA DIKH RAHA HAI:",
+                                text = when (currentLanguage) {
+                                    AppLanguage.ENGLISH -> "OVERALL TECHNICAL VERDICT:"
+                                    AppLanguage.HINDI -> "सभी इंडिकेटर्स का निष्कर्ष:"
+                                    AppLanguage.MARATHI -> "सर्व इंडिकेटर्सचा निष्कर्ष:"
+                                },
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = overallColor,
                                 fontSize = 10.sp
                             )
                             Text(
-                                text = overallHindi,
+                                text = overallStatusText,
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Black,
                                 color = TextPrimary,

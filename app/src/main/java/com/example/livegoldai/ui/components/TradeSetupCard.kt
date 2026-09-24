@@ -25,6 +25,9 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.livegoldai.localization.AppLanguage
+import com.example.livegoldai.localization.LocalAppLanguage
+import com.example.livegoldai.localization.LocalizationStrings
 import com.example.livegoldai.model.Signal
 import com.example.livegoldai.model.TradeSetup
 import com.example.livegoldai.theme.*
@@ -38,6 +41,7 @@ fun TradeSetupCard(
 ) {
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
+    val currentLanguage = LocalAppLanguage.current
 
     val signalColor = when (setup.signal) {
         Signal.BUY -> SignalBuy
@@ -83,7 +87,11 @@ fun TradeSetupCard(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "ACTIONABLE TRADE SETUP",
+                        text = when (currentLanguage) {
+                            AppLanguage.ENGLISH -> "ACTIONABLE TRADE SETUP"
+                            AppLanguage.HINDI -> "ट्रेड सेटअप (एक्शन प्लान)"
+                            AppLanguage.MARATHI -> "ट्रेड सेटअप (अ‍ॅक्शन प्लॅन)"
+                        },
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Black,
                         color = GoldLight,
@@ -107,8 +115,25 @@ fun TradeSetupCard(
                             modifier = Modifier.size(14.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
+                        val signalLabel = when (setup.signal) {
+                            Signal.BUY -> when (currentLanguage) {
+                                AppLanguage.ENGLISH -> "STRONG BUY"
+                                AppLanguage.HINDI -> "मजबूत खरीदारी (BUY)"
+                                AppLanguage.MARATHI -> "मजबूत खरेदी (BUY)"
+                            }
+                            Signal.SELL -> when (currentLanguage) {
+                                AppLanguage.ENGLISH -> "STRONG SELL"
+                                AppLanguage.HINDI -> "मजबूत बिकवाली (SELL)"
+                                AppLanguage.MARATHI -> "मजबूत विक्री (SELL)"
+                            }
+                            Signal.WAIT -> when (currentLanguage) {
+                                AppLanguage.ENGLISH -> "WAIT / NEUTRAL"
+                                AppLanguage.HINDI -> "इंतजार करें (WAIT)"
+                                AppLanguage.MARATHI -> "प्रतीक्षा करा (WAIT)"
+                            }
+                        }
                         Text(
-                            text = setup.signal.label,
+                            text = signalLabel,
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Black,
                             color = signalColor
@@ -125,14 +150,26 @@ fun TradeSetupCard(
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 SetupParamBox(
-                    label = "ENTRY ZONE",
+                    label = when (currentLanguage) {
+                        AppLanguage.ENGLISH -> "ENTRY ZONE"
+                        AppLanguage.HINDI -> "एंट्री ज़ोन"
+                        AppLanguage.MARATHI -> "एंट्री झोन"
+                    },
                     value = "$${String.format(Locale.US, "%.2f", setup.entryPrice)}",
-                    subtext = "Market / Limit",
+                    subtext = when (currentLanguage) {
+                        AppLanguage.ENGLISH -> "Market / Limit"
+                        AppLanguage.HINDI -> "मार्केट / लिमिट"
+                        AppLanguage.MARATHI -> "मार्केट / लिमिट"
+                    },
                     accentColor = TextPrimary,
                     modifier = Modifier.weight(1f)
                 )
                 SetupParamBox(
-                    label = "STOP LOSS (SL)",
+                    label = when (currentLanguage) {
+                        AppLanguage.ENGLISH -> "STOP LOSS (SL)"
+                        AppLanguage.HINDI -> "स्टॉप लॉस (SL)"
+                        AppLanguage.MARATHI -> "स्टॉप लॉस (SL)"
+                    },
                     value = "$${String.format(Locale.US, "%.2f", setup.stopLoss)}",
                     subtext = "-${String.format(Locale.US, "%.0f", setup.stopLossPips)} Pips",
                     accentColor = SignalSell,
@@ -147,14 +184,22 @@ fun TradeSetupCard(
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 SetupParamBox(
-                    label = "TAKE PROFIT 1 (TP1)",
+                    label = when (currentLanguage) {
+                        AppLanguage.ENGLISH -> "TAKE PROFIT 1 (TP1)"
+                        AppLanguage.HINDI -> "टारगेट 1 (TP1)"
+                        AppLanguage.MARATHI -> "टार्गेट 1 (TP1)"
+                    },
                     value = "$${String.format(Locale.US, "%.2f", setup.takeProfit1)}",
                     subtext = "+${String.format(Locale.US, "%.0f", setup.takeProfit1Pips)} Pips (1:1)",
                     accentColor = SignalBuy,
                     modifier = Modifier.weight(1f)
                 )
                 SetupParamBox(
-                    label = "TAKE PROFIT 2 (TP2)",
+                    label = when (currentLanguage) {
+                        AppLanguage.ENGLISH -> "TAKE PROFIT 2 (TP2)"
+                        AppLanguage.HINDI -> "टारगेट 2 (TP2)"
+                        AppLanguage.MARATHI -> "टार्गेट 2 (TP2)"
+                    },
                     value = "$${String.format(Locale.US, "%.2f", setup.takeProfit2)}",
                     subtext = "+${String.format(Locale.US, "%.0f", setup.takeProfit2Pips)} Pips (${setup.riskRewardRatio})",
                     accentColor = GoldLight,
@@ -172,7 +217,15 @@ fun TradeSetupCard(
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     PillBadge(label = "R:R", value = setup.riskRewardRatio, color = GoldPrimary)
-                    PillBadge(label = "CONFIDENCE", value = "${setup.confidencePercent}%", color = signalColor)
+                    PillBadge(
+                        label = when (currentLanguage) {
+                            AppLanguage.ENGLISH -> "CONFIDENCE"
+                            AppLanguage.HINDI -> "कॉन्फिडेंस"
+                            AppLanguage.MARATHI -> "विश्वास पातळी"
+                        },
+                        value = "${setup.confidencePercent}%",
+                        color = signalColor
+                    )
                 }
                 Text(
                     text = "ATR (14): ${String.format(Locale.US, "%.0f", setup.atrPips)} pips",
@@ -191,7 +244,7 @@ fun TradeSetupCard(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = setup.strategyNote,
+                    text = LocalizationStrings.translateReason(setup.strategyNote, currentLanguage),
                     style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp, lineHeight = 17.sp),
                     color = TextSecondary,
                     modifier = Modifier.padding(12.dp)
@@ -220,7 +273,12 @@ fun TradeSetupCard(
                             (By Rudvay Ujjwal Kalankar)
                         """.trimIndent()
                         clipboardManager.setText(AnnotatedString(text))
-                        Toast.makeText(context, "Trade Setup copied to clipboard!", Toast.LENGTH_SHORT).show()
+                        val copiedToast = when (currentLanguage) {
+                            AppLanguage.ENGLISH -> "Trade Setup copied to clipboard!"
+                            AppLanguage.HINDI -> "ट्रेड सेटअप क्लिपबोर्ड पर कॉपी हो गया!"
+                            AppLanguage.MARATHI -> "ट्रेड सेटअप क्लिपबोर्डवर कॉपी झाले!"
+                        }
+                        Toast.makeText(context, copiedToast, Toast.LENGTH_SHORT).show()
                     },
                     modifier = Modifier
                         .weight(1f)
@@ -243,7 +301,11 @@ fun TradeSetupCard(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Copy Plan",
+                        text = when (currentLanguage) {
+                            AppLanguage.ENGLISH -> "Copy Plan"
+                            AppLanguage.HINDI -> "प्लान कॉपी करें"
+                            AppLanguage.MARATHI -> "प्लॅन कॉपी करा"
+                        },
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
                         color = GoldLight
@@ -270,7 +332,11 @@ fun TradeSetupCard(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Lot & Risk",
+                        text = when (currentLanguage) {
+                            AppLanguage.ENGLISH -> "Lot & Risk"
+                            AppLanguage.HINDI -> "लॉट व रिस्क"
+                            AppLanguage.MARATHI -> "लॉट व जोखीम"
+                        },
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Black,
                         color = ObsidianBackground

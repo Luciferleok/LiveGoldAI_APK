@@ -24,6 +24,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.livegoldai.localization.AppLanguage
+import com.example.livegoldai.localization.LocalAppLanguage
+import com.example.livegoldai.localization.LocalizationStrings
 import com.example.livegoldai.model.GoldAnalysisResult
 import com.example.livegoldai.model.PredictionOutcomeStatus
 import com.example.livegoldai.model.Signal
@@ -36,6 +39,7 @@ fun KyaHogaPredictionDialog(
     onOpenLotCalculator: (Double) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val currentLanguage = LocalAppLanguage.current
     val prediction = analysis.nextPrediction
     val candleInsight = analysis.candleInsight
     val tradeSetup = analysis.tradeSetup
@@ -133,7 +137,11 @@ fun KyaHogaPredictionDialog(
                         Column {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
-                                    text = "AGLA KYA HOGA?",
+                                    text = when (currentLanguage) {
+                                        AppLanguage.ENGLISH -> "WHAT HAPPENS NEXT?"
+                                        AppLanguage.HINDI -> "अगला क्या होगा?"
+                                        AppLanguage.MARATHI -> "पुढे काय घडणार?"
+                                    },
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Black,
                                     color = GoldLight,
@@ -158,7 +166,11 @@ fun KyaHogaPredictionDialog(
                                 }
                             }
                             Text(
-                                text = "AI Future Prediction & Multi-Scenario Possibility",
+                                text = when (currentLanguage) {
+                                    AppLanguage.ENGLISH -> "AI Future Forecast & Scenario Breakdown"
+                                    AppLanguage.HINDI -> "AI भविष्य का पूर्वानुमान और परिदृश्य संभावना"
+                                    AppLanguage.MARATHI -> "AI भविष्यातील अंदाज आणि परिस्थिती विश्लेषण"
+                                },
                                 style = MaterialTheme.typography.bodySmall,
                                 fontSize = 11.sp,
                                 color = TextMuted
@@ -205,7 +217,11 @@ fun KyaHogaPredictionDialog(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "🔮 AI MAIN VERDICT / BHAWISHYAVANI",
+                                    text = when (currentLanguage) {
+                                        AppLanguage.ENGLISH -> "🔮 AI MAIN VERDICT / FORECAST"
+                                        AppLanguage.HINDI -> "🔮 AI मुख्य फैसला / भविष्यवाणी"
+                                        AppLanguage.MARATHI -> "🔮 AI मुख्य निर्णय / भाकीत"
+                                    },
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Black,
                                     color = GoldLight,
@@ -224,9 +240,21 @@ fun KyaHogaPredictionDialog(
 
                             Text(
                                 text = when {
-                                    isBuy -> "🟢 GOLD MEIN +${tradeSetup.takeProfit2Pips.toInt()} PIPS KI UPWARD RALLY KI PURI SAMBHAVNA HAI!"
-                                    isSell -> "🔴 GOLD MEIN -${tradeSetup.takeProfit2Pips.toInt()} PIPS KE BEARISH DROP KI SAMBHAVNA HAI!"
-                                    else -> "🟡 GOLD MEIN ABHI CONSOLIDATION / RANGE-BOUND MOVE RAHEGA!"
+                                    isBuy -> when (currentLanguage) {
+                                        AppLanguage.ENGLISH -> "🟢 GOLD HAS HIGH PROBABILITY OF +${tradeSetup.takeProfit2Pips.toInt()} PIPS BULLISH RALLY!"
+                                        AppLanguage.HINDI -> "🟢 GOLD में +${tradeSetup.takeProfit2Pips.toInt()} PIPS की UPWARD RALLY की पूरी संभावना है!"
+                                        AppLanguage.MARATHI -> "🟢 GOLD मध्ये +${tradeSetup.takeProfit2Pips.toInt()} PIPS ची जोरदार तेजी येण्याची दाट शक्यता आहे!"
+                                    }
+                                    isSell -> when (currentLanguage) {
+                                        AppLanguage.ENGLISH -> "🔴 GOLD HAS HIGH PROBABILITY OF -${tradeSetup.takeProfit2Pips.toInt()} PIPS BEARISH DROP!"
+                                        AppLanguage.HINDI -> "🔴 GOLD में -${tradeSetup.takeProfit2Pips.toInt()} PIPS के BEARISH DROP की संभावना है!"
+                                        AppLanguage.MARATHI -> "🔴 GOLD मध्ये -${tradeSetup.takeProfit2Pips.toInt()} PIPS चा मोठा घसरणीचा अंदाज आहे!"
+                                    }
+                                    else -> when (currentLanguage) {
+                                        AppLanguage.ENGLISH -> "🟡 GOLD IS CURRENTLY IN CONSOLIDATION / RANGE-BOUND MOVE!"
+                                        AppLanguage.HINDI -> "🟡 GOLD में अभी CONSOLIDATION / RANGE-BOUND चाल रहेगी!"
+                                        AppLanguage.MARATHI -> "🟡 GOLD मध्ये सध्या मर्यादित चढ-उतार / रेंज-बाऊंड हालचाल राहील!"
+                                    }
                                 },
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Black,
@@ -260,7 +288,7 @@ fun KyaHogaPredictionDialog(
                                         Text(text = "💡", fontSize = 14.sp)
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Text(
-                                            text = prediction.whatToDoHindi,
+                                            text = LocalizationStrings.translateReason(prediction.whatToDoHindi, currentLanguage),
                                             style = MaterialTheme.typography.bodySmall,
                                             color = TextPrimary,
                                             fontSize = 11.sp,
@@ -377,7 +405,11 @@ fun KyaHogaPredictionDialog(
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = "POSSIBILITY METER (KISKI KITNI SAMBHAVNA HAI)",
+                                        text = when (currentLanguage) {
+                                            AppLanguage.ENGLISH -> "POSSIBILITY METER (SCENARIO BREAKDOWN)"
+                                            AppLanguage.HINDI -> "संभावना मीटर (किसकी कितनी संभावना है)"
+                                            AppLanguage.MARATHI -> "शक्यता मीटर (परिस्थितीनुसार संभाव्यता)"
+                                        },
                                         style = MaterialTheme.typography.labelSmall,
                                         fontWeight = FontWeight.Black,
                                         color = GoldLight,
@@ -390,8 +422,16 @@ fun KyaHogaPredictionDialog(
 
                             // Bullish Probability Bar
                             ProbabilityItemRow(
-                                title = "🚀 Bullish Rally (Upward Move)",
-                                hindiDetail = "Price higher levels test karega",
+                                title = when (currentLanguage) {
+                                    AppLanguage.ENGLISH -> "🚀 Bullish Rally (Upward Move)"
+                                    AppLanguage.HINDI -> "🚀 Bullish Rally (ऊपर की चाल)"
+                                    AppLanguage.MARATHI -> "🚀 Bullish Rally (वर जाणारी तेजी)"
+                                },
+                                hindiDetail = when (currentLanguage) {
+                                    AppLanguage.ENGLISH -> "Price likely to test higher resistance levels"
+                                    AppLanguage.HINDI -> "Price ऊपर के लेवल्स टेस्ट करेगा"
+                                    AppLanguage.MARATHI -> "किंमत वरील लेव्हल्स टेस्ट करेल"
+                                },
                                 percentage = bullishProb,
                                 barColor = SignalBuy,
                                 isPrimary = isBuy
@@ -401,8 +441,16 @@ fun KyaHogaPredictionDialog(
 
                             // Sideways Probability Bar
                             ProbabilityItemRow(
-                                title = "⏸️ Sideways Range (No Big Move)",
-                                hindiDetail = "Price ek tight band mein move karega",
+                                title = when (currentLanguage) {
+                                    AppLanguage.ENGLISH -> "⏸️ Sideways Range (Consolidation)"
+                                    AppLanguage.HINDI -> "⏸️ Sideways Range (कोई बड़ी चाल नहीं)"
+                                    AppLanguage.MARATHI -> "⏸️ Sideways Range (मर्यादित चढ-उतार)"
+                                },
+                                hindiDetail = when (currentLanguage) {
+                                    AppLanguage.ENGLISH -> "Price moving within a tight band"
+                                    AppLanguage.HINDI -> "Price एक तंग दायरे में घूमेगा"
+                                    AppLanguage.MARATHI -> "किंमत एका मर्यादित कक्षेत राहील"
+                                },
                                 percentage = sidewaysProb,
                                 barColor = SignalWait,
                                 isPrimary = !isBuy && !isSell
@@ -412,8 +460,16 @@ fun KyaHogaPredictionDialog(
 
                             // Bearish Probability Bar
                             ProbabilityItemRow(
-                                title = "🔻 Bearish Drop (Downward Move)",
-                                hindiDetail = "Price lower support break karega",
+                                title = when (currentLanguage) {
+                                    AppLanguage.ENGLISH -> "🔻 Bearish Drop (Downward Move)"
+                                    AppLanguage.HINDI -> "🔻 Bearish Drop (नीचे की चाल)"
+                                    AppLanguage.MARATHI -> "🔻 Bearish Drop (खाली घसरण)"
+                                },
+                                hindiDetail = when (currentLanguage) {
+                                    AppLanguage.ENGLISH -> "Price likely to break lower support"
+                                    AppLanguage.HINDI -> "Price नीचे का सपोर्ट ब्रेक कर सकता है"
+                                    AppLanguage.MARATHI -> "किंमत खालील सपोर्ट तोडू शकते"
+                                },
                                 percentage = bearishProb,
                                 barColor = SignalSell,
                                 isPrimary = isSell
@@ -490,7 +546,11 @@ fun KyaHogaPredictionDialog(
                     ) {
                         Column(modifier = Modifier.padding(14.dp)) {
                             Text(
-                                text = "🔴 ABHI KYA CHAL RAHA HAI VS AGLA TARGET",
+                                text = when (currentLanguage) {
+                                    AppLanguage.ENGLISH -> "🔴 LIVE STATUS VS NEXT EXPECTED TARGET"
+                                    AppLanguage.HINDI -> "🔴 अभी क्या चल रहा है vs अगला टारगेट"
+                                    AppLanguage.MARATHI -> "🔴 सध्या काय स्थिती आहे विरुद्ध पुढील टार्गेट"
+                                },
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Black,
                                 color = GoldLight
@@ -503,7 +563,11 @@ fun KyaHogaPredictionDialog(
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = "Abhi Ka Live Price",
+                                        text = when (currentLanguage) {
+                                            AppLanguage.ENGLISH -> "Current Live Price"
+                                            AppLanguage.HINDI -> "अभी का लाइव भाव"
+                                            AppLanguage.MARATHI -> "सध्याचा लाईव्ह भाव"
+                                        },
                                         style = MaterialTheme.typography.bodySmall,
                                         fontSize = 10.sp,
                                         color = TextMuted
@@ -543,7 +607,11 @@ fun KyaHogaPredictionDialog(
                                     horizontalAlignment = Alignment.End
                                 ) {
                                     Text(
-                                        text = "Agla Expected Target",
+                                        text = when (currentLanguage) {
+                                            AppLanguage.ENGLISH -> "Next Expected Target"
+                                            AppLanguage.HINDI -> "अगला संभावित टारगेट"
+                                            AppLanguage.MARATHI -> "पुढील अपेक्षित टार्गेट"
+                                        },
                                         style = MaterialTheme.typography.bodySmall,
                                         fontSize = 10.sp,
                                         color = TextMuted
@@ -605,7 +673,11 @@ fun KyaHogaPredictionDialog(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "🎯 AAPKO KYA KARNA CHAHIYE (ACTION PLAN)",
+                                    text = when (currentLanguage) {
+                                        AppLanguage.ENGLISH -> "🎯 RECOMMENDED ACTION PLAN"
+                                        AppLanguage.HINDI -> "🎯 आपको क्या करना चाहिए (ACTION PLAN)"
+                                        AppLanguage.MARATHI -> "🎯 तुम्ही काय करायला हवे (अ‍ॅक्शन प्लॅन)"
+                                    },
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Black,
                                     color = GoldLight
@@ -676,7 +748,11 @@ fun KyaHogaPredictionDialog(
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = "Calculate Safe Lot Size For My Account",
+                                    text = when (currentLanguage) {
+                                        AppLanguage.ENGLISH -> "Calculate Safe Lot Size For My Account"
+                                        AppLanguage.HINDI -> "अपने अकाउंट के लिए सुरक्षित लॉट साइज निकालें"
+                                        AppLanguage.MARATHI -> "आपल्या खात्यासाठी सुरक्षित लॉट साईझ कॅल्क्युलेट करा"
+                                    },
                                     color = GoldLight,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 11.sp
@@ -707,14 +783,22 @@ fun KyaHogaPredictionDialog(
                             Spacer(modifier = Modifier.width(8.dp))
                             Column {
                                 Text(
-                                    text = "Kab Ye Prediction Cancel Hogi? (Invalidation)",
+                                    text = when (currentLanguage) {
+                                        AppLanguage.ENGLISH -> "When is this Prediction Cancelled? (Invalidation Rule)"
+                                        AppLanguage.HINDI -> "कब यह प्रेडिक्शन कैंसिल होगी? (Invalidation Rule)"
+                                        AppLanguage.MARATHI -> "हा अंदाज कधी रद्द मानला जाईल? (Invalidation Rule)"
+                                    },
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Black,
                                     color = SignalSell
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
-                                    text = "Agar candle $${String.format(Locale.US, "%.2f", tradeSetup.stopLoss)} ke paar close ho jaye, to setup turant invalid ho jayega. Stop Loss lagana mandatory hai.",
+                                    text = when (currentLanguage) {
+                                        AppLanguage.ENGLISH -> "If a candle closes beyond $${String.format(Locale.US, "%.2f", tradeSetup.stopLoss)}, this trade setup is immediately invalid. Always maintain Stop Loss."
+                                        AppLanguage.HINDI -> "अगर कैंडल $${String.format(Locale.US, "%.2f", tradeSetup.stopLoss)} के पार क्लोज हो जाए, तो सेटअप तुरंत इनवैलिड हो जाएगा। स्टॉप लॉस लगाना अनिवार्य है।"
+                                        AppLanguage.MARATHI -> "जर कँडल $${String.format(Locale.US, "%.2f", tradeSetup.stopLoss)} च्या पलीकडे बंद झाली, तर हा सेटअप तत्काळ रद्द होईल. स्टॉप लॉस लावणे अत्यंत आवश्यक आहे."
+                                    },
                                     style = MaterialTheme.typography.bodySmall,
                                     fontSize = 10.sp,
                                     color = TextSecondary,
@@ -735,7 +819,11 @@ fun KyaHogaPredictionDialog(
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
                             Text(
-                                text = "🔬 KYUN HOGA AISA? (3 MAIN REASONS)",
+                                text = when (currentLanguage) {
+                                    AppLanguage.ENGLISH -> "🔬 WHY THIS FORECAST? (3 MAIN REASONS)"
+                                    AppLanguage.HINDI -> "🔬 ऐसा क्यों होगा? (3 मुख्य कारण)"
+                                    AppLanguage.MARATHI -> "🔬 असे का घडेल? (3 मुख्य तांत्रिक कारणे)"
+                                },
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Black,
                                 color = GoldLight
@@ -744,17 +832,29 @@ fun KyaHogaPredictionDialog(
 
                             ReasonRow(
                                 number = "1",
-                                text = "Smart Money: Liquidity grab ke baad institutional order block se strong wick rejection mili hai."
+                                text = when (currentLanguage) {
+                                    AppLanguage.ENGLISH -> "Smart Money: Strong wick rejection detected from institutional order block after liquidity grab."
+                                    AppLanguage.HINDI -> "Smart Money: Liquidity grab के बाद institutional order block से strong wick rejection मिली है।"
+                                    AppLanguage.MARATHI -> "Smart Money: Liquidity grab नंतर institutional order block कडून strong wick rejection मिळाले आहे."
+                                }
                             )
                             Spacer(modifier = Modifier.height(6.dp))
                             ReasonRow(
                                 number = "2",
-                                text = "Trend Confluence: ${analysis.buyCount} out of ${analysis.totalGroups} major indicator groups ${analysis.overallSignal.name} bias dikha rahe hain."
+                                text = when (currentLanguage) {
+                                    AppLanguage.ENGLISH -> "Trend Confluence: ${analysis.buyCount} out of ${analysis.totalGroups} major indicator groups confirm ${analysis.overallSignal.name} bias."
+                                    AppLanguage.HINDI -> "Trend Confluence: ${analysis.totalGroups} में से ${analysis.buyCount} मुख्य इंडिकेटर ग्रुप्स ${analysis.overallSignal.name} संकेत दिखा रहे हैं।"
+                                    AppLanguage.MARATHI -> "Trend Confluence: ${analysis.totalGroups} पैकी ${analysis.buyCount} प्रमुख इंडिकेटर गट ${analysis.overallSignal.name} संकेत दाखवत आहेत."
+                                }
                             )
                             Spacer(modifier = Modifier.height(6.dp))
                             ReasonRow(
                                 number = "3",
-                                text = "Multi-Timeframe: M15 aur H1 charts par momentum expansion shuru ho chuka hai."
+                                text = when (currentLanguage) {
+                                    AppLanguage.ENGLISH -> "Multi-Timeframe: Momentum expansion has triggered across M15 and H1 charts."
+                                    AppLanguage.HINDI -> "Multi-Timeframe: M15 और H1 चार्ट्स पर मोमेंटम एक्सपेंशन शुरू हो चुका है।"
+                                    AppLanguage.MARATHI -> "Multi-Timeframe: M15 आणि H1 चार्ट्सवर momentum expansion सुरू झाले आहे."
+                                }
                             )
                         }
                     }
@@ -776,7 +876,11 @@ fun KyaHogaPredictionDialog(
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
-                        text = "I UNDERSTAND THE PROBABILITIES • GOT IT",
+                        text = when (currentLanguage) {
+                            AppLanguage.ENGLISH -> "I UNDERSTAND THE PROBABILITIES • GOT IT"
+                            AppLanguage.HINDI -> "मुझे समझ आ गया • ठीक है"
+                            AppLanguage.MARATHI -> "मला सर्व समजले • ठीक आहे"
+                        },
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Black,
                         letterSpacing = 0.5.sp

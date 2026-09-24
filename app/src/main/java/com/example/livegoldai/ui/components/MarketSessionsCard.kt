@@ -19,6 +19,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.livegoldai.localization.AppLanguage
+import com.example.livegoldai.localization.LocalAppLanguage
 import com.example.livegoldai.model.MarketSession
 import com.example.livegoldai.theme.*
 import java.time.ZonedDateTime
@@ -33,6 +35,7 @@ fun MarketSessionsCard(
 
     val hasGoldenOverlap = sessions.any { it.isGoldenOverlap }
     val currentUtcTime = rememberUtcTime()
+    val currentLanguage = LocalAppLanguage.current
 
     Card(
         modifier = modifier
@@ -67,7 +70,11 @@ fun MarketSessionsCard(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "GLOBAL GOLD SESSIONS",
+                        text = when (currentLanguage) {
+                            AppLanguage.ENGLISH -> "GLOBAL GOLD SESSIONS"
+                            AppLanguage.HINDI -> "ग्लोबल गोल्ड ट्रेडिंग सेशन्स"
+                            AppLanguage.MARATHI -> "जागतिक गोल्ड ट्रेडिंग सेशन्स"
+                        },
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Black,
                         color = GoldLight,
@@ -106,7 +113,11 @@ fun MarketSessionsCard(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "LONDON / NY OVERLAP ACTIVE • Peak Gold Trading Volume",
+                            text = when (currentLanguage) {
+                                AppLanguage.ENGLISH -> "LONDON / NY OVERLAP ACTIVE • Peak Gold Trading Volume"
+                                AppLanguage.HINDI -> "लंदन / न्यूयॉर्क ओवरलैप एक्टिव • सर्वाधिक ट्रेडिंग वॉल्यूम"
+                                AppLanguage.MARATHI -> "लंडन / न्यूयॉर्क ओव्हरलॅप सक्रिय • सर्वाधिक ट्रेडिंग व्हॉल्यूम"
+                            },
                             style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                             fontWeight = FontWeight.Bold,
                             color = GoldLight
@@ -145,6 +156,7 @@ private fun SessionItemBox(
     session: MarketSession,
     modifier: Modifier = Modifier
 ) {
+    val currentLanguage = LocalAppLanguage.current
     val statusColor = if (session.isOpen) SignalBuy else TextMuted
     val statusBg = if (session.isOpen) SignalBuyBg else ObsidianSurfaceElevated
 
@@ -189,7 +201,19 @@ private fun SessionItemBox(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = if (session.isOpen) "OPEN" else "CLOSED",
+                            text = if (session.isOpen) {
+                                when (currentLanguage) {
+                                    AppLanguage.ENGLISH -> "OPEN"
+                                    AppLanguage.HINDI -> "ओपन"
+                                    AppLanguage.MARATHI -> "सुरू"
+                                }
+                            } else {
+                                when (currentLanguage) {
+                                    AppLanguage.ENGLISH -> "CLOSED"
+                                    AppLanguage.HINDI -> "बंद"
+                                    AppLanguage.MARATHI -> "बंद"
+                                }
+                            },
                             style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
                             fontWeight = FontWeight.Bold,
                             color = statusColor

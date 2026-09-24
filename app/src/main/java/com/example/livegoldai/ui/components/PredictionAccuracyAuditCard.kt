@@ -25,6 +25,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.livegoldai.localization.AppLanguage
+import com.example.livegoldai.localization.LocalAppLanguage
+import com.example.livegoldai.localization.LocalizationStrings
 import com.example.livegoldai.model.PastPredictionAuditItem
 import com.example.livegoldai.model.PredictionOutcomeStatus
 import com.example.livegoldai.model.Signal
@@ -40,6 +43,7 @@ fun PredictionAccuracyAuditCard(
 ) {
     if (audit == null) return
 
+    val currentLanguage = LocalAppLanguage.current
     var expandedTradeId by remember { mutableStateOf<String?>(null) }
     var showAllRules by remember { mutableStateOf(false) }
 
@@ -109,7 +113,11 @@ fun PredictionAccuracyAuditCard(
                             )
                         }
                         Text(
-                            text = "${audit.timeframe} Timeframe Ka Result & Galti Sudhar",
+                            text = when (currentLanguage) {
+                                AppLanguage.ENGLISH -> "${audit.timeframe} Timeframe Accuracy & Self-Correction"
+                                AppLanguage.HINDI -> "${audit.timeframe} टाइमफ्रेम का रिजल्ट और गलती सुधार"
+                                AppLanguage.MARATHI -> "${audit.timeframe} टाइमफ्रेमचा निकाल आणि चूक सुधारणा"
+                            },
                             style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
                             color = TextSecondary
                         )
@@ -315,8 +323,15 @@ fun PredictionAccuracyAuditCard(
                         Spacer(modifier = Modifier.height(8.dp))
 
                         // Root Cause: Kyu sahi hua ya kyu galat hua
+                        val diagnosisTitle = when (currentLanguage) {
+                            AppLanguage.ENGLISH -> "🔍 WHY IT HAPPENED (DIAGNOSIS): "
+                            AppLanguage.HINDI -> "🔍 क्यों हुआ था (कारण): "
+                            AppLanguage.MARATHI -> "🔍 का घडले होते (कारण): "
+                        }
+                        val translatedWhy = LocalizationStrings.translateReason(last.whyItHappenedHindi, currentLanguage)
+
                         Text(
-                            text = "🔍 KYU HUA THA (DIAGNOSIS): ${last.whyItHappenedHindi}",
+                            text = "$diagnosisTitle $translatedWhy",
                             style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp, lineHeight = 17.sp),
                             color = TextPrimary
                         )
@@ -324,6 +339,13 @@ fun PredictionAccuracyAuditCard(
                         Spacer(modifier = Modifier.height(6.dp))
 
                         // Self-Correction: Aage kya galti nahi honi chahiye
+                        val lessonHeader = when (currentLanguage) {
+                            AppLanguage.ENGLISH -> "AI SELF-CORRECTION (LESSON LEARNED):"
+                            AppLanguage.HINDI -> "AI ने क्या सुधार किया (आगे से क्या नहीं होगा):"
+                            AppLanguage.MARATHI -> "AI ने काय सुधारणा केली (पुढे काय होणार नाही):"
+                        }
+                        val translatedLesson = LocalizationStrings.translateReason(last.lessonLearnedHindi, currentLanguage)
+
                         Surface(
                             shape = RoundedCornerShape(10.dp),
                             color = ObsidianSurfaceElevated,
@@ -342,14 +364,14 @@ fun PredictionAccuracyAuditCard(
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Column {
                                     Text(
-                                        text = "AI NE KYA SUDHAR KIYA (AAGE SE KYA NAHI HOGA):",
+                                        text = lessonHeader,
                                         style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
                                         fontWeight = FontWeight.Black,
                                         color = GoldLight
                                     )
                                     Spacer(modifier = Modifier.height(2.dp))
                                     Text(
-                                        text = last.lessonLearnedHindi,
+                                        text = translatedLesson,
                                         style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp, lineHeight = 16.sp),
                                         color = TextSecondary
                                     )

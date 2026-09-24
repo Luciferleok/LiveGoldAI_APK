@@ -17,6 +17,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.livegoldai.localization.AppLanguage
+import com.example.livegoldai.localization.LocalAppLanguage
 import com.example.livegoldai.model.PivotLevels
 import com.example.livegoldai.theme.*
 import java.util.Locale
@@ -27,6 +29,8 @@ fun PivotLadderCard(
     pivotLevels: PivotLevels,
     modifier: Modifier = Modifier
 ) {
+    val currentLanguage = LocalAppLanguage.current
+
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -48,13 +52,21 @@ fun PivotLadderCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "FLOOR PIVOT PRICE LADDER",
+                    text = when (currentLanguage) {
+                        AppLanguage.ENGLISH -> "FLOOR PIVOT PRICE LADDER"
+                        AppLanguage.HINDI -> "फ्लोर पिवट प्राइस लैडर"
+                        AppLanguage.MARATHI -> "फ्लोर पिव्हट प्राईस लॅडर"
+                    },
                     style = MaterialTheme.typography.labelMedium,
                     color = TextMuted,
                     letterSpacing = 1.sp
                 )
                 Text(
-                    text = "Live Market Zones",
+                    text = when (currentLanguage) {
+                        AppLanguage.ENGLISH -> "Live Market Zones"
+                        AppLanguage.HINDI -> "लाइव मार्केट ज़ोन"
+                        AppLanguage.MARATHI -> "लाईव्ह मार्केट झोन्स"
+                    },
                     style = MaterialTheme.typography.labelMedium.copy(fontSize = 10.sp),
                     color = GoldLight
                 )
@@ -62,12 +74,38 @@ fun PivotLadderCard(
 
             Spacer(modifier = Modifier.height(14.dp))
 
+            val r2Label = when (currentLanguage) {
+                AppLanguage.ENGLISH -> "R2 Resistance"
+                AppLanguage.HINDI -> "R2 रेसिस्टेंस"
+                AppLanguage.MARATHI -> "R2 रेझिस्टन्स"
+            }
+            val r1Label = when (currentLanguage) {
+                AppLanguage.ENGLISH -> "R1 Resistance"
+                AppLanguage.HINDI -> "R1 रेसिस्टेंस"
+                AppLanguage.MARATHI -> "R1 रेझिस्टन्स"
+            }
+            val pivotLabel = when (currentLanguage) {
+                AppLanguage.ENGLISH -> "Floor Pivot (P)"
+                AppLanguage.HINDI -> "फ्लोर पिवट (P)"
+                AppLanguage.MARATHI -> "फ्लोर पिव्हट (P)"
+            }
+            val s1Label = when (currentLanguage) {
+                AppLanguage.ENGLISH -> "S1 Support"
+                AppLanguage.HINDI -> "S1 सपोर्ट"
+                AppLanguage.MARATHI -> "S1 सपोर्ट"
+            }
+            val s2Label = when (currentLanguage) {
+                AppLanguage.ENGLISH -> "S2 Support"
+                AppLanguage.HINDI -> "S2 सपोर्ट"
+                AppLanguage.MARATHI -> "S2 सपोर्ट"
+            }
+
             // Ladder items
-            LadderRow(label = "R2 Resistance", price = pivotLevels.r2, color = SignalSell, currentPrice = currentPrice)
-            LadderRow(label = "R1 Resistance", price = pivotLevels.r1, color = SignalSell.copy(alpha = 0.85f), currentPrice = currentPrice)
-            LadderRow(label = "Floor Pivot (P)", price = pivotLevels.pivot, color = GoldPrimary, currentPrice = currentPrice, isPivot = true)
-            LadderRow(label = "S1 Support", price = pivotLevels.s1, color = SignalBuy.copy(alpha = 0.85f), currentPrice = currentPrice)
-            LadderRow(label = "S2 Support", price = pivotLevels.s2, color = SignalBuy, currentPrice = currentPrice)
+            LadderRow(label = r2Label, price = pivotLevels.r2, color = SignalSell, currentPrice = currentPrice)
+            LadderRow(label = r1Label, price = pivotLevels.r1, color = SignalSell.copy(alpha = 0.85f), currentPrice = currentPrice)
+            LadderRow(label = pivotLabel, price = pivotLevels.pivot, color = GoldPrimary, currentPrice = currentPrice, isPivot = true)
+            LadderRow(label = s1Label, price = pivotLevels.s1, color = SignalBuy.copy(alpha = 0.85f), currentPrice = currentPrice)
+            LadderRow(label = s2Label, price = pivotLevels.s2, color = SignalBuy, currentPrice = currentPrice)
         }
     }
 }
