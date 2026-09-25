@@ -28,6 +28,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -50,6 +53,7 @@ fun SettingsDialog(
     var keyText by remember { mutableStateOf(currentApiKey) }
     var selectedLanguage by remember(currentLanguage) { mutableStateOf(currentLanguage) }
     var showLanguageSuccessBanner by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -448,6 +452,77 @@ fun SettingsDialog(
                             fontWeight = FontWeight.Bold,
                             style = MaterialTheme.typography.labelLarge
                         )
+                    }
+
+                    // 3.5 VIP PRO LIFETIME PASS & PAYGLOCAL PAYMENT LINK
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = ObsidianSurfaceCard,
+                        border = CardDefaults.outlinedCardBorder().copy(
+                            brush = Brush.linearGradient(listOf(GoldPrimary, GoldDark, ObsidianBorderHighlight))
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                try {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://api.payglocal.com/gl/v1/payments/pl?x-gl-link-id=96be0127-4217-48ef-8dbc-9444b435d028"))
+                                    context.startActivity(intent)
+                                } catch (_: Exception) {}
+                            }
+                            .testTag("payglocal_vip_button")
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Surface(
+                                shape = CircleShape,
+                                color = GoldPrimary,
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Default.Diamond,
+                                        contentDescription = null,
+                                        tint = ObsidianBackground,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = "KALANKAR FX VIP LIFETIME",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Black,
+                                        color = GoldLight
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Surface(
+                                        shape = RoundedCornerShape(4.dp),
+                                        color = SignalBuy
+                                    ) {
+                                        Text(
+                                            text = "VIP",
+                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+                                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                            fontWeight = FontWeight.Black,
+                                            color = Color.Black
+                                        )
+                                    }
+                                }
+                                Text(
+                                    text = when (selectedLanguage) {
+                                        AppLanguage.ENGLISH -> "PayGlocal Instant Pass • Complete Payment / Private VIP Desk"
+                                        AppLanguage.HINDI -> "PayGlocal पेमेंट पास • प्राइवेट VIP डेस्क और डायरेक्ट एक्सेस"
+                                        AppLanguage.MARATHI -> "PayGlocal पेमेंट पास • प्रायव्हेट VIP डेस्क आणि थेट ॲक्सेस"
+                                    },
+                                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp),
+                                    color = TextSecondary
+                                )
+                            }
+                        }
                     }
 
                     // 4. API KEY CONFIGURATION

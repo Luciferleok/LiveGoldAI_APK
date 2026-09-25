@@ -1,6 +1,7 @@
 package com.example.livegoldai.ui.components
 
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -13,6 +14,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -85,6 +88,29 @@ fun KyaHogaPredictionDialog(
         ),
         label = "pulseGlow"
     )
+
+    var nowMillis by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    val validUntil = prediction?.validUntilTimestamp ?: 0L
+    LaunchedEffect(validUntil) {
+        while (isActive) {
+            delay(1000)
+            nowMillis = System.currentTimeMillis()
+        }
+    }
+    val remainingMillis = (validUntil - nowMillis).coerceAtLeast(0L)
+    val isValid = remainingMillis > 0L || validUntil == 0L
+    val remTotalSeconds = remainingMillis / 1000L
+    val remHours = remTotalSeconds / 3600L
+    val remMinutes = (remTotalSeconds % 3600L) / 60L
+    val remSeconds = remTotalSeconds % 60L
+
+    val countdownStr = when {
+        remHours > 0 -> "${remHours}h ${remMinutes}m ${remSeconds}s"
+        remMinutes > 0 -> "${remMinutes}m ${remSeconds}s"
+        else -> "${remSeconds}s"
+    }
+    val totalValidityMillis = ((prediction?.validityDurationMinutes ?: 60) * 60_000L).coerceAtLeast(1L)
+    val progressFraction = (remainingMillis.toFloat() / totalValidityMillis.toFloat()).coerceIn(0f, 1f)
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -300,7 +326,122 @@ fun KyaHogaPredictionDialog(
                         }
                     }
 
-                    // 1.5 Timeframe Accuracy & Last Prediction Outcome Banner
+                    // 1.5 LIVE PREDICTION VALIDITY COUNTDOWN BANNER
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = if (isValid) ObsidianSurfaceElevated else ObsidianSurfaceCard,
+                        border = CardDefaults.outlinedCardBorder().copy(
+                            brush = Brush.horizontalGradient(
+                                if (isValid) listOf(NeonGreen.copy(alpha = 0.8f), GoldPrimary.copy(alpha = 0.6f))
+                                else listOf(SignalSell.copy(alpha = 0.6f), ObsidianBorder)
+                            )
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("dialog_validity_timer_banner")
+                    ) {
+                        Column(modifier = Modifier.padding(14.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(10.dp)
+                                            .clip(CircleShape)
+                                            .background(if (isValid) NeonGreen.copy(alpha = pulseGlow) else SignalSell)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = when (currentLanguage) {
+                                            AppLanguage.ENGLISH -> if (isValid) "PREDICTION VALIDITY (ACTIVE)" else "VALIDITY EXPIRED (EVALUATING)"
+                                            AppLanguage.HINDI -> if (isValid) "प्रेडिक्शन वैधता (सक्रिय)" else "समय समाप्त (अगला चक्र शुरू)"
+                                            AppLanguage.MARATHI -> if (isValid) "प्रेडिक्शन वैधता (सक्रिय)" else "वेळ संपली (पुढील चक्र सुरू)"
+                                        },
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Black,
+                                        color = if (isValid) GoldLight else TextMuted,
+                                        letterSpacing = 0.8.sp
+                                    )
+                                }
+
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = (if (isValid) NeonGreen else SignalSell).copy(alpha = 0.16f),
+                                    border = BorderStroke(1.dp, (if (isValid) NeonGreen else SignalSell).copy(alpha = 0.5f))
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = if (isValid) Icons.Default.HourglassTop else Icons.Default.TimerOff,
+                                            contentDescription = null,
+                                            tint = if (isValid) NeonGreen else SignalSell,
+                                            modifier = Modifier.size(12.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = if (isValid) "⏳ $countdownStr" else "EXPIRED",
+                                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = if (isValid) NeonGreen else SignalSell
+                                        )
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            LinearProgressIndicator(
+                                progress = { progressFraction },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(5.dp)
+                                    .clip(RoundedCornerShape(3.dp)),
+                                color = if (progressFraction > 0.25f) NeonGreen else AmberWarning,
+                                trackColor = ObsidianBorder
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "⏱️ ${prediction?.getValidityFormatted(currentLanguage) ?: "Active for this interval"}",
+                                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                                    color = TextPrimary,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    text = when (currentLanguage) {
+                                        AppLanguage.ENGLISH -> "Auto-Evaluated at TP1/SL"
+                                        AppLanguage.HINDI -> "TP1 या SL हिट होने पर स्वतः समाप्त"
+                                        AppLanguage.MARATHI -> "TP1 किंवा SL हिट झाल्यास पूर्ण"
+                                    },
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                    color = TextMuted
+                                )
+                            }
+
+                            val ruleText = prediction?.getInvalidationRule(currentLanguage) ?: ""
+                            if (ruleText.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "🛡️ $ruleText",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                    color = GoldLight.copy(alpha = 0.9f)
+                                )
+                            }
+                        }
+                    }
+
+                    // 1.6 PREDICTION TRACK RECORD: KITNE SAHI / KITNE GALAT
                     analysis.timeframeAudit?.let { audit ->
                         Surface(
                             shape = RoundedCornerShape(16.dp),
@@ -308,7 +449,9 @@ fun KyaHogaPredictionDialog(
                             border = CardDefaults.outlinedCardBorder().copy(
                                 brush = Brush.linearGradient(listOf(GoldPrimary.copy(alpha = 0.6f), ObsidianBorderHighlight))
                             ),
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("dialog_scorecard_banner")
                         ) {
                             Column(modifier = Modifier.padding(14.dp)) {
                                 Row(
@@ -317,31 +460,199 @@ fun KyaHogaPredictionDialog(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(text = "🏆", fontSize = 14.sp)
+                                        Text(text = "📊", fontSize = 14.sp)
                                         Spacer(modifier = Modifier.width(6.dp))
                                         Text(
-                                            text = "${audit.timeframe} ACCURACY: ${audit.winRatePercent}% WIN RATE",
-                                            style = MaterialTheme.typography.labelMedium,
+                                            text = when (currentLanguage) {
+                                                AppLanguage.ENGLISH -> "${audit.timeframe} SCORECARD (CORRECT vs INCORRECT)"
+                                                AppLanguage.HINDI -> "${audit.timeframe} प्रेडिक्शन रिपोर्ट (कितने सही / कितने गलत)"
+                                                AppLanguage.MARATHI -> "${audit.timeframe} निकाल (किती बरोबर / किती चूक)"
+                                            },
+                                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                                             fontWeight = FontWeight.Black,
-                                            color = GoldLight
+                                            color = GoldLight,
+                                            letterSpacing = 0.5.sp
                                         )
                                     }
                                     Text(
-                                        text = "${audit.winCount} Won / ${audit.lossCount} Lost",
+                                        text = "${audit.winRatePercent}% WIN RATE",
                                         style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                                        fontWeight = FontWeight.Bold,
+                                        fontWeight = FontWeight.Black,
                                         color = SignalBuy
                                     )
                                 }
 
-                                audit.lastPredictionOutcome?.let { last ->
-                                    val isWin = last.outcomeStatus == PredictionOutcomeStatus.TP1_HIT ||
-                                            last.outcomeStatus == PredictionOutcomeStatus.TP2_HIT
-                                    val outcomeColor = if (isWin) SignalBuy else SignalSell
+                                Spacer(modifier = Modifier.height(10.dp))
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Surface(
+                                        shape = RoundedCornerShape(10.dp),
+                                        color = SignalBuy.copy(alpha = 0.12f),
+                                        border = BorderStroke(1.dp, SignalBuy.copy(alpha = 0.4f)),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Column(
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                                            horizontalAlignment = Alignment.CenterHorizontally
+                                        ) {
+                                            Text(
+                                                text = "${audit.winCount} SAHI ✅",
+                                                style = MaterialTheme.typography.labelMedium,
+                                                fontWeight = FontWeight.Black,
+                                                color = SignalBuy
+                                            )
+                                            Text(
+                                                text = when (currentLanguage) {
+                                                    AppLanguage.ENGLISH -> "Correct / TP Hit"
+                                                    AppLanguage.HINDI -> "सही प्रेडिक्शन"
+                                                    AppLanguage.MARATHI -> "अचूक अंदाज"
+                                                },
+                                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
+                                                color = TextSecondary
+                                            )
+                                        }
+                                    }
+
+                                    Surface(
+                                        shape = RoundedCornerShape(10.dp),
+                                        color = SignalSell.copy(alpha = 0.12f),
+                                        border = BorderStroke(1.dp, SignalSell.copy(alpha = 0.4f)),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Column(
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                                            horizontalAlignment = Alignment.CenterHorizontally
+                                        ) {
+                                            Text(
+                                                text = "${audit.lossCount} GALAT ❌",
+                                                style = MaterialTheme.typography.labelMedium,
+                                                fontWeight = FontWeight.Black,
+                                                color = SignalSell
+                                            )
+                                            Text(
+                                                text = when (currentLanguage) {
+                                                    AppLanguage.ENGLISH -> "Failed / SL Hit"
+                                                    AppLanguage.HINDI -> "गलत प्रेडिक्शन"
+                                                    AppLanguage.MARATHI -> "चूक अंदाज"
+                                                },
+                                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
+                                                color = TextSecondary
+                                            )
+                                        }
+                                    }
+
+                                    Surface(
+                                        shape = RoundedCornerShape(10.dp),
+                                        color = ObsidianSurfaceElevated,
+                                        border = BorderStroke(1.dp, GoldPrimary.copy(alpha = 0.4f)),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Column(
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                                            horizontalAlignment = Alignment.CenterHorizontally
+                                        ) {
+                                            Text(
+                                                text = "${if (audit.netPipsGained >= 0) "+" else ""}${audit.netPipsGained}",
+                                                style = MaterialTheme.typography.labelMedium,
+                                                fontWeight = FontWeight.Black,
+                                                color = if (audit.netPipsGained >= 0) GoldLight else SignalSell
+                                            )
+                                            Text(
+                                                text = "Net Pips P&L",
+                                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
+                                                color = TextSecondary
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // 1.7 AI AUTOMATIC ERROR SELF-CORRECTION (गलतियों से आगे का ऑटोमैटिक सुधार)
+                    prediction?.appliedCorrections?.takeIf { it.isNotEmpty() }?.let { corrections ->
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = ObsidianSurfaceCard,
+                            border = CardDefaults.outlinedCardBorder().copy(
+                                brush = Brush.linearGradient(
+                                    listOf(GoldPrimary.copy(alpha = 0.8f), NeonGreen.copy(alpha = 0.4f), ObsidianBorder)
+                                )
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("dialog_ai_self_correction_section")
+                        ) {
+                            Column(modifier = Modifier.padding(14.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(28.dp)
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .background(GoldPrimary.copy(alpha = 0.15f))
+                                                .border(1.dp, GoldPrimary.copy(alpha = 0.5f), RoundedCornerShape(8.dp)),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Psychology,
+                                                contentDescription = null,
+                                                tint = GoldLight,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Column {
+                                            Text(
+                                                text = when (currentLanguage) {
+                                                    AppLanguage.ENGLISH -> "AI SELF-CORRECTION GUARDS"
+                                                    AppLanguage.HINDI -> "AI स्वचालित गलती सुधार (सक्रिय)"
+                                                    AppLanguage.MARATHI -> "AI स्वयंचलित चूक सुधारणा (सक्रिय)"
+                                                },
+                                                style = MaterialTheme.typography.labelSmall,
+                                                fontWeight = FontWeight.Black,
+                                                color = GoldLight,
+                                                letterSpacing = 0.5.sp
+                                            )
+                                            Text(
+                                                text = when (currentLanguage) {
+                                                    AppLanguage.ENGLISH -> "Past errors prevented in this prediction"
+                                                    AppLanguage.HINDI -> "पिछली गलतियों से सीखकर यह सिग्नल सुधारा गया"
+                                                    AppLanguage.MARATHI -> "मागील चुकांमधून शिकून हा सिग्नल सुधारण्यात आला"
+                                                },
+                                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                                color = TextSecondary
+                                            )
+                                        }
+                                    }
+
+                                    Surface(
+                                        shape = RoundedCornerShape(6.dp),
+                                        color = NeonGreen.copy(alpha = 0.15f)
+                                    ) {
+                                        Text(
+                                            text = "${corrections.size} SHIELDS 🛡️",
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                            fontWeight = FontWeight.Bold,
+                                            color = NeonGreen
+                                        )
+                                    }
+                                }
+
+                                corrections.forEach { corr ->
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Surface(
                                         shape = RoundedCornerShape(10.dp),
-                                        color = outcomeColor.copy(alpha = 0.12f),
+                                        color = ObsidianSurfaceElevated,
+                                        border = BorderStroke(1.dp, ObsidianBorderHighlight),
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
                                         Column(modifier = Modifier.padding(10.dp)) {
@@ -351,28 +662,29 @@ fun KyaHogaPredictionDialog(
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
                                                 Text(
-                                                    text = if (isWin) "✅ Pichhla Signal: Target Hit (+${last.pipsResult} Pips)" else "⚠️ Pichhla Signal: SL Hit (${last.pipsResult} Pips)",
+                                                    text = "✓ ${corr.getTitle(currentLanguage)}",
                                                     style = MaterialTheme.typography.labelSmall,
                                                     fontWeight = FontWeight.Black,
-                                                    color = outcomeColor
+                                                    color = GoldLight
                                                 )
                                                 Text(
-                                                    text = last.timeAgo,
-                                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-                                                    color = TextMuted
+                                                    text = corr.badgeTag,
+                                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
+                                                    color = SignalBuy,
+                                                    fontWeight = FontWeight.Bold
                                                 )
                                             }
-                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Spacer(modifier = Modifier.height(3.dp))
                                             Text(
-                                                text = "Kyu hua: ${last.whyItHappenedHindi}",
+                                                text = corr.getDescription(currentLanguage),
                                                 style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp, lineHeight = 15.sp),
                                                 color = TextPrimary
                                             )
                                             Spacer(modifier = Modifier.height(3.dp))
                                             Text(
-                                                text = "Aage kya seekha: ${last.lessonLearnedHindi}",
-                                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp, lineHeight = 15.sp),
-                                                color = GoldLight
+                                                text = "🔍 ${corr.getErrorAddressed(currentLanguage)}",
+                                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                                color = TextMuted
                                             )
                                         }
                                     }

@@ -447,7 +447,7 @@ fun PriceHeaderCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Timeframe selection chips (5m, 10m, 15m, 30m, 45m, 1h, 2h, 3h, 4h, 6h, 1day)
+            // Timeframe selection chips (1m, 2m, 3m, 4m, 5m, 10m, 15m, 30m, 45m, 1h, 2h, 3h, 4h, 5h, 6h, 1day, 1w, 2w, 3w, 1mo)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -455,8 +455,18 @@ fun PriceHeaderCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                val intervals = listOf("5m", "10m", "15m", "30m", "45m", "1h", "2h", "3h", "4h", "6h", "1day")
+                val intervals = listOf(
+                    "1m", "2m", "3m", "4m", "5m", "10m", "15m", "30m", "45m",
+                    "1h", "2h", "3h", "4h", "5h", "6h",
+                    "1day",
+                    "1w", "2w", "3w",
+                    "1mo"
+                )
                 val labels = mapOf(
+                    "1m" to "1M",
+                    "2m" to "2M",
+                    "3m" to "3M",
+                    "4m" to "4M",
                     "5m" to "5M",
                     "10m" to "10M",
                     "15m" to "15M",
@@ -466,8 +476,13 @@ fun PriceHeaderCard(
                     "2h" to "2H",
                     "3h" to "3H",
                     "4h" to "4H",
+                    "5h" to "5H",
                     "6h" to "6H",
-                    "1day" to "1D"
+                    "1day" to "1D",
+                    "1w" to "1W",
+                    "2w" to "2W",
+                    "3w" to "3W",
+                    "1mo" to "1MO"
                 )
 
                 intervals.forEach { interval ->

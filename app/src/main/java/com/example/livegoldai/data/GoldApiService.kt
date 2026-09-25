@@ -74,6 +74,10 @@ class GoldApiService(
         if (apiKey.isNotBlank()) {
             try {
                 val (tdInterval, tdGroup) = when (normInterval) {
+                    "1m", "1min" -> Pair("1min", 1)
+                    "2m" -> Pair("1min", 2)
+                    "3m" -> Pair("1min", 3)
+                    "4m" -> Pair("1min", 4)
                     "5m" -> Pair("5min", 1)
                     "10m" -> Pair("5min", 2)
                     "15m", "15min" -> Pair("15min", 1)
@@ -83,8 +87,13 @@ class GoldApiService(
                     "2h" -> Pair("2h", 1)
                     "3h" -> Pair("1h", 3)
                     "4h" -> Pair("4h", 1)
+                    "5h" -> Pair("1h", 5)
                     "6h" -> Pair("2h", 3)
                     "1d", "1day" -> Pair("1day", 1)
+                    "1w", "1week" -> Pair("1week", 1)
+                    "2w", "2week" -> Pair("1week", 2)
+                    "3w", "3week" -> Pair("1week", 3)
+                    "1mo", "1month" -> Pair("1month", 1)
                     else -> Pair("4h", 1)
                 }
                 val outputSize = (200 * tdGroup).coerceAtMost(5000)
@@ -141,6 +150,10 @@ class GoldApiService(
         // Completely free, NO API key required, 1200 req/min limit, 24/7 second-by-second live updates
         try {
             val (binanceInterval, binanceGroup, limit) = when (normInterval) {
+                "1m", "1min" -> Triple("1m", 1, 70)
+                "2m" -> Triple("1m", 2, 120)
+                "3m" -> Triple("3m", 1, 70)
+                "4m" -> Triple("1m", 4, 160)
                 "5m" -> Triple("5m", 1, 70)
                 "10m" -> Triple("5m", 2, 120)
                 "15m", "15min" -> Triple("15m", 1, 70)
@@ -150,8 +163,13 @@ class GoldApiService(
                 "2h" -> Triple("2h", 1, 70)
                 "3h" -> Triple("1h", 3, 120)
                 "4h" -> Triple("4h", 1, 70)
+                "5h" -> Triple("1h", 5, 160)
                 "6h" -> Triple("6h", 1, 70)
                 "1d", "1day" -> Triple("1d", 1, 70)
+                "1w", "1week" -> Triple("1w", 1, 70)
+                "2w", "2week" -> Triple("1w", 2, 120)
+                "3w", "3week" -> Triple("1w", 3, 160)
+                "1mo", "1month" -> Triple("1M", 1, 70)
                 else -> Triple("4h", 1, 70)
             }
             val liveUrl = "https://api.binance.com/api/v3/klines?symbol=PAXGUSDT&interval=$binanceInterval&limit=$limit"
@@ -213,10 +231,13 @@ class GoldApiService(
         // Step 2.5: Third Live Backup - Yahoo Finance (GC=F Gold Spot Futures, Zero API Key)
         try {
             val (yfInterval, yfRange) = when (normInterval) {
+                "1m", "1min", "2m", "3m", "4m" -> Pair("1m", "1d")
                 "5m", "10m" -> Pair("5m", "1d")
                 "15m", "30m", "45m" -> Pair("15m", "5d")
-                "1h", "2h", "3h", "4h", "6h" -> Pair("60m", "1mo")
+                "1h", "2h", "3h", "4h", "5h", "6h" -> Pair("60m", "1mo")
                 "1d", "1day" -> Pair("1d", "3mo")
+                "1w", "1week", "2w", "2week", "3w", "3week" -> Pair("1wk", "1y")
+                "1mo", "1month" -> Pair("1mo", "2y")
                 else -> Pair("60m", "1mo")
             }
             val yfUrl = "https://query1.finance.yahoo.com/v8/finance/chart/GC=F?interval=$yfInterval&range=$yfRange"

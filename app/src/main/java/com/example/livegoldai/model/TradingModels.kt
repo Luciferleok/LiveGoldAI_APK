@@ -1,5 +1,6 @@
 package com.example.livegoldai.model
 
+import com.example.livegoldai.localization.AppLanguage
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -39,8 +40,15 @@ data class BuyerSellerSentiment(
     val institutionalSentimentBias: Signal,
     val liveActionHindi: String,
     val liveActionEnglish: String,
+    val liveActionMarathi: String = "",
     val strengthLevel: String
-)
+) {
+    fun getLiveAction(lang: AppLanguage): String = when (lang) {
+        AppLanguage.ENGLISH -> liveActionEnglish
+        AppLanguage.HINDI -> liveActionHindi
+        AppLanguage.MARATHI -> liveActionMarathi.ifEmpty { liveActionHindi }
+    }
+}
 
 @Serializable
 data class EconomicEvent(
@@ -110,6 +118,60 @@ data class AccountTierRisk(
 )
 
 @Serializable
+data class AppliedCorrectionDetail(
+    val titleEnglish: String,
+    val titleHindi: String,
+    val titleMarathi: String = "",
+    val descriptionEnglish: String,
+    val descriptionHindi: String,
+    val descriptionMarathi: String = "",
+    val errorAddressedEnglish: String,
+    val errorAddressedHindi: String,
+    val errorAddressedMarathi: String = "",
+    val badgeTag: String = "ACTIVE GUARD 🛡️"
+) {
+    fun getTitle(lang: AppLanguage): String = when (lang) {
+        AppLanguage.ENGLISH -> titleEnglish
+        AppLanguage.HINDI -> titleHindi
+        AppLanguage.MARATHI -> titleMarathi.ifEmpty { titleHindi }
+    }
+    fun getDescription(lang: AppLanguage): String = when (lang) {
+        AppLanguage.ENGLISH -> descriptionEnglish
+        AppLanguage.HINDI -> descriptionHindi
+        AppLanguage.MARATHI -> descriptionMarathi.ifEmpty { descriptionHindi }
+    }
+    fun getErrorAddressed(lang: AppLanguage): String = when (lang) {
+        AppLanguage.ENGLISH -> errorAddressedEnglish
+        AppLanguage.HINDI -> errorAddressedHindi
+        AppLanguage.MARATHI -> errorAddressedMarathi.ifEmpty { errorAddressedHindi }
+    }
+}
+
+@Serializable
+data class ErrorCorrectionFeedback(
+    val errorType: String,
+    val errorTypeHindi: String,
+    val pastMistakeDescriptionEnglish: String,
+    val pastMistakeDescriptionHindi: String,
+    val pastMistakeDescriptionMarathi: String = "",
+    val correctionAppliedEnglish: String,
+    val correctionAppliedHindi: String,
+    val correctionAppliedMarathi: String = "",
+    val status: String = "ACTIVE_GUARD"
+) {
+    fun getPastMistake(lang: AppLanguage): String = when (lang) {
+        AppLanguage.ENGLISH -> pastMistakeDescriptionEnglish
+        AppLanguage.HINDI -> pastMistakeDescriptionHindi
+        AppLanguage.MARATHI -> pastMistakeDescriptionMarathi.ifEmpty { pastMistakeDescriptionHindi }
+    }
+    fun getCorrectionApplied(lang: AppLanguage): String = when (lang) {
+        AppLanguage.ENGLISH -> correctionAppliedEnglish
+        AppLanguage.HINDI -> correctionAppliedHindi
+        AppLanguage.MARATHI -> correctionAppliedMarathi.ifEmpty { correctionAppliedHindi }
+    }
+}
+
+@Serializable
 data class NextPredictionPlaybook(
     val verdict: Signal,
     val urgencyTag: String, // "STRONG CONVICTION", "ACCUMULATE ON DIP", "WAIT / NO TRADE"
@@ -121,22 +183,89 @@ data class NextPredictionPlaybook(
     val stopLossLevel: String,
     val stopLossPips: Double = 18.0,
     val stopLossRationale: String = "Placed strictly below swing structure & SuperTrend trail to prevent stop hunts",
+    val stopLossRationaleEnglish: String = "",
+    val stopLossRationaleMarathi: String = "",
     val takeProfit1: String,
     val takeProfit2: String,
     val takeProfit3: String = "",
     val whereToEnterHindi: String = "",
+    val whereToEnterEnglish: String = "",
+    val whereToEnterMarathi: String = "",
     val whereToAvoidHindi: String = "",
+    val whereToAvoidEnglish: String = "",
+    val whereToAvoidMarathi: String = "",
     val whatToDoHindi: String,
     val whatToDoEnglish: String,
+    val whatToDoMarathi: String = "",
     val hindiAudioAdvice: String = "",
+    val englishAudioAdvice: String = "",
+    val marathiAudioAdvice: String = "",
     val executionRules: List<String> = emptyList(),
+    val executionRulesHindi: List<String> = emptyList(),
+    val executionRulesMarathi: List<String> = emptyList(),
     val accountTierMatrix: List<AccountTierRisk> = emptyList(),
     val profitProjection001Lot: String,
     val profitProjection010Lot: String,
     val profitProjection100Lot: String,
     val timeHorizon: String,
-    val riskManagementRule: String
-)
+    val riskManagementRule: String,
+    val validityDurationMinutes: Int = 180,
+    val validUntilTimestamp: Long = 0L,
+    val validityFormattedEnglish: String = "",
+    val validityFormattedHindi: String = "",
+    val validityFormattedMarathi: String = "",
+    val invalidationRuleEnglish: String = "",
+    val invalidationRuleHindi: String = "",
+    val invalidationRuleMarathi: String = "",
+    val appliedCorrections: List<AppliedCorrectionDetail> = emptyList()
+) {
+    fun getValidityFormatted(lang: AppLanguage): String = when (lang) {
+        AppLanguage.ENGLISH -> validityFormattedEnglish.ifEmpty { "Valid for $validityDurationMinutes Minutes" }
+        AppLanguage.HINDI -> validityFormattedHindi.ifEmpty { validityFormattedEnglish.ifEmpty { "अगले $validityDurationMinutes मिनट तक मान्य" } }
+        AppLanguage.MARATHI -> validityFormattedMarathi.ifEmpty { validityFormattedHindi.ifEmpty { validityFormattedEnglish } }
+    }
+
+    fun getInvalidationRule(lang: AppLanguage): String = when (lang) {
+        AppLanguage.ENGLISH -> invalidationRuleEnglish.ifEmpty { "Valid until time expires or price touches Stop Loss ($stopLossLevel) or TP2 ($takeProfit2)" }
+        AppLanguage.HINDI -> invalidationRuleHindi.ifEmpty { "समय समाप्त होने तक या Stop Loss ($stopLossLevel) / Target ($takeProfit1) छूने तक मान्य" }
+        AppLanguage.MARATHI -> invalidationRuleMarathi.ifEmpty { invalidationRuleHindi }
+    }
+    fun getWhereToEnter(lang: AppLanguage): String = when (lang) {
+        AppLanguage.ENGLISH -> whereToEnterEnglish.ifEmpty { whereToEnterHindi }
+        AppLanguage.HINDI -> whereToEnterHindi
+        AppLanguage.MARATHI -> whereToEnterMarathi.ifEmpty { whereToEnterHindi }
+    }
+
+    fun getWhereToAvoid(lang: AppLanguage): String = when (lang) {
+        AppLanguage.ENGLISH -> whereToAvoidEnglish.ifEmpty { whereToAvoidHindi }
+        AppLanguage.HINDI -> whereToAvoidHindi
+        AppLanguage.MARATHI -> whereToAvoidMarathi.ifEmpty { whereToAvoidHindi }
+    }
+
+    fun getWhatToDo(lang: AppLanguage): String = when (lang) {
+        AppLanguage.ENGLISH -> whatToDoEnglish
+        AppLanguage.HINDI -> whatToDoHindi
+        AppLanguage.MARATHI -> whatToDoMarathi.ifEmpty { whatToDoHindi }
+    }
+
+    fun getAudioAdvice(lang: AppLanguage): String = when (lang) {
+        AppLanguage.ENGLISH -> englishAudioAdvice.ifEmpty { whatToDoEnglish }
+        AppLanguage.HINDI -> hindiAudioAdvice.ifEmpty { whatToDoHindi }
+        AppLanguage.MARATHI -> marathiAudioAdvice.ifEmpty { whatToDoMarathi.ifEmpty { hindiAudioAdvice } }
+    }
+
+    fun getExecutionRules(lang: AppLanguage): List<String> = when (lang) {
+        AppLanguage.ENGLISH -> executionRules
+        AppLanguage.HINDI -> executionRulesHindi.ifEmpty { executionRules }
+        AppLanguage.MARATHI -> executionRulesMarathi.ifEmpty { executionRulesHindi.ifEmpty { executionRules } }
+    }
+
+    fun getStopLossRationale(lang: AppLanguage): String = when (lang) {
+        AppLanguage.ENGLISH -> stopLossRationaleEnglish.ifEmpty { stopLossRationale }
+        AppLanguage.HINDI -> stopLossRationale
+        AppLanguage.MARATHI -> stopLossRationaleMarathi.ifEmpty { stopLossRationale }
+    }
+}
 
 @Serializable
 data class IndicatorItem(
@@ -176,8 +305,16 @@ data class TradeSetup(
     val riskRewardRatio: String,
     val confidencePercent: Int,
     val strategyNote: String,
+    val strategyNoteHindi: String = "",
+    val strategyNoteMarathi: String = "",
     val atrPips: Double
-)
+) {
+    fun getStrategyNote(lang: AppLanguage): String = when (lang) {
+        AppLanguage.ENGLISH -> strategyNote
+        AppLanguage.HINDI -> strategyNoteHindi.ifEmpty { strategyNote }
+        AppLanguage.MARATHI -> strategyNoteMarathi.ifEmpty { strategyNoteHindi.ifEmpty { strategyNote } }
+    }
+}
 
 @Serializable
 data class MarketSession(
@@ -199,8 +336,16 @@ data class CandleReadingInsight(
     val nextCandleForecast: String, // "High probability of Green Bullish Expansion candle"
     val nextCandleExpectedRange: String, // "$4,382.00 - $4,396.00"
     val nextCandleTradeTactic: String, // "Buy the initial lower dip wick within first 2 minutes of the candle"
+    val nextCandleTradeTacticHindi: String = "",
+    val nextCandleTradeTacticMarathi: String = "",
     val confidencePercent: Int // 88%
-)
+) {
+    fun getNextCandleTradeTactic(lang: AppLanguage): String = when (lang) {
+        AppLanguage.ENGLISH -> nextCandleTradeTactic
+        AppLanguage.HINDI -> nextCandleTradeTacticHindi.ifEmpty { nextCandleTradeTactic }
+        AppLanguage.MARATHI -> nextCandleTradeTacticMarathi.ifEmpty { nextCandleTradeTacticHindi.ifEmpty { nextCandleTradeTactic } }
+    }
+}
 
 @Serializable
 data class TimeframeStatus(
@@ -227,10 +372,25 @@ data class TradingTrick(
     val winRate: String, // "89% Win Rate"
     val status: String, // "ACTIVE TRIGGER 🟢", "WATCHING 🟡", "READY"
     val triggerCondition: String, // "Price wicked below S1 then instantly reclaimed above VWAP"
-    val howToTradeHindi: String, // "Jaise hi fake breakdown ke baad price wapas candle close upar kare, turant BUY karein!"
-    val howToTradeEnglish: String, // "Enter long immediately once candle closes back inside range after liquidity sweep."
+    val triggerConditionEnglish: String = "",
+    val triggerConditionMarathi: String = "",
+    val howToTradeHindi: String, // Hindi in Devanagari with English core terms
+    val howToTradeEnglish: String, // Pure English
+    val howToTradeMarathi: String = "", // Marathi in Devanagari with English core terms
     val expectedPipGain: String // "+20 to +45 Pips"
-)
+) {
+    fun getTriggerCondition(lang: AppLanguage): String = when (lang) {
+        AppLanguage.ENGLISH -> triggerConditionEnglish.ifEmpty { triggerCondition }
+        AppLanguage.HINDI -> triggerCondition
+        AppLanguage.MARATHI -> triggerConditionMarathi.ifEmpty { triggerCondition }
+    }
+
+    fun getHowToTrade(lang: AppLanguage): String = when (lang) {
+        AppLanguage.ENGLISH -> howToTradeEnglish
+        AppLanguage.HINDI -> howToTradeHindi
+        AppLanguage.MARATHI -> howToTradeMarathi.ifEmpty { howToTradeHindi }
+    }
+}
 
 @Serializable
 enum class PredictionOutcomeStatus {
@@ -257,10 +417,24 @@ data class PastPredictionAuditItem(
     val outcomeStatus: PredictionOutcomeStatus,
     val whyItHappenedHindi: String,
     val whyItHappenedEnglish: String,
+    val whyItHappenedMarathi: String = "",
     val lessonLearnedHindi: String,
     val lessonLearnedEnglish: String,
+    val lessonLearnedMarathi: String = "",
     val indicatorsInvolved: List<String>
-)
+) {
+    fun getWhyItHappened(lang: AppLanguage): String = when (lang) {
+        AppLanguage.ENGLISH -> whyItHappenedEnglish
+        AppLanguage.HINDI -> whyItHappenedHindi
+        AppLanguage.MARATHI -> whyItHappenedMarathi.ifEmpty { whyItHappenedHindi }
+    }
+
+    fun getLessonLearned(lang: AppLanguage): String = when (lang) {
+        AppLanguage.ENGLISH -> lessonLearnedEnglish
+        AppLanguage.HINDI -> lessonLearnedHindi
+        AppLanguage.MARATHI -> lessonLearnedMarathi.ifEmpty { lessonLearnedHindi }
+    }
+}
 
 @Serializable
 data class TimeframeAccuracyAudit(
@@ -275,8 +449,17 @@ data class TimeframeAccuracyAudit(
     val recentSignalAudits: List<PastPredictionAuditItem>,
     val autoCorrectionRules: List<String>,
     val autoCorrectionRulesHindi: List<String>,
-    val aiEngineLearningStatus: String
-)
+    val autoCorrectionRulesMarathi: List<String> = emptyList(),
+    val aiEngineLearningStatus: String,
+    val autoCorrectionsLearnedCount: Int = 4,
+    val errorDiagnosisList: List<ErrorCorrectionFeedback> = emptyList()
+) {
+    fun getAutoCorrectionRules(lang: AppLanguage): List<String> = when (lang) {
+        AppLanguage.ENGLISH -> autoCorrectionRules
+        AppLanguage.HINDI -> autoCorrectionRulesHindi
+        AppLanguage.MARATHI -> if (autoCorrectionRulesMarathi.isNotEmpty()) autoCorrectionRulesMarathi else autoCorrectionRulesHindi
+    }
+}
 
 @Serializable
 data class GoldAnalysisResult(
